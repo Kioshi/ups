@@ -1,0 +1,5 @@
+server/server/Debug/*
+server/ipch/*
+server/Debug/*
+server/.vs/*
+client/out/*
