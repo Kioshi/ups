@@ -145,10 +145,15 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="server.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="server.hpp" />
+    <ClCompile Include="tcp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="packet.hpp" />
+    <ClInclude Include="player.hpp" />
     <ClInclude Include="tcp.hpp" />
+    <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

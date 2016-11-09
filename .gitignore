@@ -3,3 +3,4 @@ server/ipch/*
 server/Debug/*
 server/.vs/*
 client/out/*
+server/server.VC.*

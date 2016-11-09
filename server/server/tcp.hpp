@@ -1,11 +1,16 @@
 #pragma once
 #include <assert.h>
 #include <functional>
+#include "utils.hpp"
+#include "packet.hpp"
+#include <vector>
 
 #ifdef WIN32
 #include <stdio.h>
 #include <winsock.h>
 #include <stdlib.h>
+#include <winioctl.h>
+#define ioctl ioctlsocket
 #pragma comment(lib, "Ws2_32.lib")
 typedef int socklen_t;
 #else
@@ -15,6 +20,7 @@ typedef int socklen_t;
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #endif
 
 
@@ -24,18 +30,19 @@ public:
     TCP()
     {
 #ifdef WIN32
-        WSADATA wsaData;
-        if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0)
-            DieWithError("WSAStartup() failed");
-        _cleanup = true;
+        if (!_connections++)
+        {
+            WSADATA wsaData;
+            if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0)
+                DieWithError("WSAStartup() failed");
+        }
 #endif
     }
 
     TCP(int socket) 
         : _socket(socket)
-        , _cleanup(false)
     {
-
+        TCP();
     }
 
     int socket()
@@ -103,12 +110,84 @@ public:
         ::send(_socket, buffer, lenght, 0);
     }
 
+    void send(Packet* packet)
+    {
+        char * buffer = new char[packet->getSize()];
+        send(buffer, packet->getSize());
+        delete buffer;
+    }
+
+    Packet* recieve()
+    {
+        char o[1];
+        char s[1];
+        char data[257];
+        Opcodes opcode;
+        uint8 size;
+        memset(data, 0, sizeof(data));
+
+        if (recv(o, sizeof(o)) > 0)
+            opcode = (Opcodes)o[0];
+        else
+            return nullptr;
+
+        //Packets without data
+        switch (opcode)
+        {
+            case UNUSED:
+                return new Packet(opcode,size,data);
+        }
+
+        if (recv(s, sizeof(s)) > 0)
+            size = s[0];
+        else
+            return nullptr;
+
+        if (recv(data, size + 1) > 0)
+            return new Packet(opcode, size, data);
+        else
+            return nullptr;
+    }
+
+    bool select()
+    {
+
+    }
+
+    bool winSelect(std::vector<Packet*>& packets)
+    {
+        fd_set readfds;
+        //clear the socket fd set
+        FD_ZERO(&readfds);
+
+        FD_SET(_socket, &readfds);
+
+        TIMEVAL tv = { 0 };
+        tv.tv_usec = 10*IN_MICROSECONDS;
+        int ret = ::select(0, &readfds, NULL, NULL, &tv);
+        if (ret == -1)
+            return false;
+        else if (ret == 0)
+            return true; // timeout
+                   
+        if (FD_ISSET(_socket, &readfds))
+        {
+            Packet* packet = recieve();
+            if (packet)
+                packets.push_back(packet);
+            else
+                return false;
+        }
+
+        return true;
+    }
+
     ~TCP()
     {
 
 #ifdef WIN32
         closesocket(_socket);
-        if (_cleanup)
+        if (--_connections == 0)
             WSACleanup();
 #else
         close(_socket);
@@ -130,5 +209,5 @@ private:
 }
 #endif
     int _socket;
-    bool _cleanup;
+    static uint32 _connections;
 };
