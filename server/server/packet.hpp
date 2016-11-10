@@ -5,6 +5,13 @@ enum Opcodes
 {
     LOGIN = 0,
     SESSION,
+    CREATE_LOBBY,
+    START_GAME,
+    JOIN_LOBBY,
+    LEAVE_LOBBY,
+    KICK_PLAYER,
+    SEND_MESSAGE,
+    QUIT,
     UNUSED, //placehoder
 };
 
@@ -19,6 +26,12 @@ public:
         memcpy(data, _data, 256);
     }
 
+    Packet(Opcodes _opcode)
+        : opcode(_opcode)
+        , size(0)
+    {
+    }
+
     explicit operator Opcodes() const
     {
         return opcode;
@@ -26,7 +39,7 @@ public:
 
     int getSize()
     {
-        return 2 + size;
+        return 1 + size ? 1 : 0 + size;
     }
 
     Opcodes opcode;

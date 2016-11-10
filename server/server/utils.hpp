@@ -7,5 +7,8 @@ typedef uint8_t uint8;
 
 enum
 {
+    IN_MILISECONDS = 1000,
     IN_MICROSECONDS = 1000,
+    DIFF = 100,
+    DISCONNECT_TIMEOUT = 30 * IN_MILISECONDS,
 };

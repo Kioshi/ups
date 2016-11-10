@@ -88,16 +88,13 @@ public:
 
     void accept(std::function<void(int)> lambda )
     {
-        while (true)
-        {
-            struct sockaddr_in addr;
-            socklen_t addrLen = sizeof(sockaddr_in);
-            int clientSocket = ::accept(_socket, (struct sockaddr *)&addr, &addrLen);
-            if (clientSocket > 0)
-                lambda(clientSocket);
-            else
-                DieWithError("Accept error");
-        }
+        struct sockaddr_in addr;
+        socklen_t addrLen = sizeof(sockaddr_in);
+        int clientSocket = ::accept(_socket, (struct sockaddr *)&addr, &addrLen);
+        if (clientSocket > 0)
+            lambda(clientSocket);
+        else
+            DieWithError("Accept error");
     }
 
     int recv(char * buffer, int lenght)
@@ -135,7 +132,7 @@ public:
         switch (opcode)
         {
             case UNUSED:
-                return new Packet(opcode,size,data);
+                return new Packet(opcode);
         }
 
         if (recv(s, sizeof(s)) > 0)
@@ -147,11 +144,6 @@ public:
             return new Packet(opcode, size, data);
         else
             return nullptr;
-    }
-
-    bool select()
-    {
-
     }
 
     bool winSelect(std::vector<Packet*>& packets)

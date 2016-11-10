@@ -3,6 +3,8 @@
 #include <thread>
 #include <string>
 #include <atomic>
+#include "Game.hpp"
+#include "Lobby.hpp"
 
 enum eStreams
 {
@@ -11,7 +13,7 @@ enum eStreams
     MAX_STREAMS
 };
 
-enum eState
+enum PlayerState
 {
     READY,
     DISCONNECTED,
@@ -19,14 +21,28 @@ enum eState
     WAITING_FOR_DELETE
 };
 
+class PlayerPacket
+{
+public:
+    PlayerPacket(class Player* _player, Packet* _packet)
+        : player(_player)
+        , packet(_packet)
+    {}
+
+    Player* player;
+    Packet* packet;
+};
+
 class Player
 {
 public:
-    Player(TCP* socket, std::string _name)
+    Player(TCP* socket, std::string _name, std::vector<PlayerPacket*> packets)
         : _socket(socket)
         , name(_name)
         , session(_name.rbegin(),_name.rend())
         , _state(READY)
+        , game(nullptr)
+        , _packets(packets)
     {
         _socket->send(new Packet(SESSION, (uint8)session.size()+1, session.c_str()));
         createNetworkThread();
@@ -40,23 +56,6 @@ public:
 
     }
 
-    void Update()
-    {
-        if (_state != READY)
-        {
-            if (networkThread && _state == DISCONNECTED)
-            {
-                networkThread->join();
-                delete networkThread;
-                networkThread = nullptr;
-            }
-            return;
-        }
-
-        for (auto packet: _recieved)
-        {
-        }
-    }
 
     void Reconnect(TCP* socket)
     {
@@ -78,11 +77,19 @@ private:
         {
             while (_state == READY)
             {
-                if (!_socket->winSelect(_recieved))
+                std::vector<Packet*> packets;
+                if (!_socket->winSelect(packets))
                 {
                     delete _socket;
                     _state = DISCONNECTED;
+                    game->Disconnected(this);
                     return;
+                }
+                else
+                {
+                    std::vector<PlayerPacket*>& ppackets = game ? game->GetPackets() : _packets;
+                    for (auto packet : packets)
+                        ppackets.push_back(new PlayerPacket(this, packet));
                 }
             }
         });
@@ -92,10 +99,11 @@ private:
 public:
     std::string name;
     std::string session;
+    Game* game;
 
 private:
-    eState _state;
+    PlayerState _state;
     TCP* _socket;
     std::thread* networkThread;
-    std::vector<Packet*> _recieved;
+    std::vector<PlayerPacket*> _packets;
 };

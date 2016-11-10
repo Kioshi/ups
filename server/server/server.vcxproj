@@ -150,6 +150,8 @@
     <ClCompile Include="tcp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Game.hpp" />
+    <ClInclude Include="Lobby.hpp" />
     <ClInclude Include="packet.hpp" />
     <ClInclude Include="player.hpp" />
     <ClInclude Include="tcp.hpp" />
