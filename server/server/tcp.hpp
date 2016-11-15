@@ -4,31 +4,31 @@
 #include "utils.hpp"
 #include "packet.hpp"
 #include <vector>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef WIN32
-#include <stdio.h>
-#include <winsock.h>
-#include <stdlib.h>
+#include <Winsock2.h>
 #include <winioctl.h>
 #define ioctl ioctlsocket
 #pragma comment(lib, "Ws2_32.lib")
 typedef int socklen_t;
 #else
-#include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <time.h>
 #endif
 
 
 class TCP
 {
 public:
-    TCP()
+    TCP(int sock = 0)
     {
+        _socket = sock;
 #ifdef WIN32
         if (!_connections++)
         {
@@ -37,12 +37,20 @@ public:
                 DieWithError("WSAStartup() failed");
         }
 #endif
+        if (!_socket)
+            socket();
     }
 
-    TCP(int socket) 
-        : _socket(socket)
+    ~TCP()
     {
-        TCP();
+
+#ifdef WIN32
+        closesocket(_socket);
+        if (--_connections == 0)
+            WSACleanup();
+#else
+        close(_socket);
+#endif
     }
 
     int socket()
@@ -94,7 +102,10 @@ public:
         if (clientSocket > 0)
             lambda(clientSocket);
         else
-            DieWithError("Accept error");
+        {
+            printf("trouble");
+             DieWithError("Accept error");
+        }
     }
 
     int recv(char * buffer, int lenght)
@@ -109,7 +120,7 @@ public:
 
     void send(Packet* packet)
     {
-        char * buffer = new char[packet->getSize()];
+        char * buffer = packet->toCharArray();
         send(buffer, packet->getSize());
         delete buffer;
     }
@@ -146,6 +157,14 @@ public:
             return nullptr;
     }
 
+    bool select(std::vector<Packet*>& packets)
+    {
+#ifdef WIN32
+        return winSelect(packets);
+#endif
+    }
+#ifdef WIN32
+
     bool winSelect(std::vector<Packet*>& packets)
     {
         fd_set readfds;
@@ -155,13 +174,13 @@ public:
         FD_SET(_socket, &readfds);
 
         TIMEVAL tv = { 0 };
-        tv.tv_usec = 10*IN_MICROSECONDS;
+        tv.tv_usec = 10 * IN_MICROSECONDS;
         int ret = ::select(0, &readfds, NULL, NULL, &tv);
         if (ret == -1)
             return false;
         else if (ret == 0)
             return true; // timeout
-                   
+
         if (FD_ISSET(_socket, &readfds))
         {
             Packet* packet = recieve();
@@ -174,17 +193,8 @@ public:
         return true;
     }
 
-    ~TCP()
-    {
+#endif // WIN32
 
-#ifdef WIN32
-        closesocket(_socket);
-        if (--_connections == 0)
-            WSACleanup();
-#else
-        close(_socket);
-#endif
-    }
 
 private:
 #ifdef WIN32

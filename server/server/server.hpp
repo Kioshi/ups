@@ -1,5 +1,7 @@
 // server.cpp : Defines the entry point for the console application.
 //
+#pragma once
+
 #include "tcp.hpp"
 #include "packet.hpp"
 #include "player.hpp"
@@ -10,6 +12,7 @@
 #include <mutex>
 #include <map>
 #include <iostream>
+#include <algorithm>
 
 enum ServerState
 {
@@ -25,6 +28,7 @@ public:
     {
         TCP* server = new TCP();
         server->bind(port);
+        _port = port;
         server->listen();
         _server = server;
         _state = RUNNING;
@@ -38,8 +42,9 @@ public:
             {
                 _server->accept([&](int socket)
                 {
-                    std::thread([&]
+                    std::thread t([&, socket]
                     {
+                        std::cout << "New client " << socket << std::endl;
                         TCP* client = new TCP(socket);
                         Packet* recv = client->recieve();
                         if (!recv)
@@ -55,7 +60,7 @@ public:
                             std::string name(recv->data);
                             if (checkNickName(name))
                             {
-                                std::string session(name.rbegin(), name.rend());
+                                std::cout << "Client " << socket << " name: "<< name << std::endl;
                                 addNewPlayer(new Player(client, name, _packets));
                                 delete recv;
                                 return;
@@ -74,8 +79,10 @@ public:
                         }
                         delete recv;
                         delete client;
-                    }).detach();
+                    }
+                    );t.detach();
                 });
+
             }
         });
         acceptThread.detach();
@@ -103,8 +110,10 @@ public:
             std::this_thread::sleep_for(std::chrono::milliseconds(DIFF));
         }
 
-        inputTHread.join();
-        acceptThread.join();
+        if (inputTHread.joinable())
+            inputTHread.join();
+        if (acceptThread.joinable())
+            acceptThread.join();
     };
     
 private:
@@ -228,4 +237,5 @@ private:
     std::mutex _playersLock;
     std::mutex _disconnectedLock;
     TCP* _server;
+    uint16 _port;
 };

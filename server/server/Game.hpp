@@ -1,6 +1,7 @@
 #pragma once
-#include "player.hpp"
 #include <vector>
+#include <mutex>
+#include <atomic>
 
 class Player;
 class PlayerPacket;
@@ -8,48 +9,22 @@ class PlayerPacket;
 class Game
 {
 public:
-    Game(std::vector<Player*> players)
-        : _running(true)
-        , _players(players)
-    {
-    }
+    Game(std::vector<Player*> players);
 
-    bool isRunning()
-    {
-        return _running;
-    }
+    bool isRunning();
+    
+    void RemovePlayer(Player* player);
 
-    void Disconnected(Player* player)
-    {
-        std::lock_guard<std::mutex> guard(_lock);
-        auto itr = std::find(_players.begin(), _players.end(), player);
-        if (itr != _players.end())
-        {
-            _players.erase(itr);
-            _disconnected.push_back(player);
-        }
-    }
+    std::vector<PlayerPacket*>& GetPackets();
+private:
 
-    void RemovePlayer(Player* player)
-    {
-        std::lock_guard<std::mutex> guard(_lock);
+    void run();
 
-        auto itr = std::find(_players.begin(), _players.end(), player);
-        if (itr != _players.end())
-            _players.erase(itr);
+    void processPackets();
+    void checkState();
 
-        itr = std::find(_disconnected.begin(), _disconnected.end(), player);
-        if (itr != _disconnected.end())
-            _disconnected.erase(itr);
-    }
-
-    std::vector<PlayerPacket*>& GetPackets()
-    {
-        return _packets;
-    }
 private:
     std::vector<Player*> _players;
-    std::vector<Player*> _disconnected;
     std::vector<PlayerPacket*> _packets;
     std::atomic<bool> _running;
     std::mutex _lock;

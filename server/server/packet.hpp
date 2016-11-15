@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <string.h>
+#include "utils.hpp"
 
 enum Opcodes
 {
@@ -39,7 +41,18 @@ public:
 
     int getSize()
     {
-        return 1 + size ? 1 : 0 + size;
+        return 1 + (size ? 1 : 0) + size;
+    }
+    char* toCharArray()
+    {
+        char * ch = new char[getSize()];
+        ch[0] = opcode;
+        if (size)
+        {
+            ch[1] = size;
+            memcpy(ch+2, data, size);
+        }
+        return ch;
     }
 
     Opcodes opcode;

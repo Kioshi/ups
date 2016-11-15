@@ -5,6 +5,7 @@
 #include <atomic>
 #include "Game.hpp"
 #include "Lobby.hpp"
+#include "tcp.hpp"
 
 enum eStreams
 {
@@ -39,10 +40,11 @@ public:
     Player(TCP* socket, std::string _name, std::vector<PlayerPacket*> packets)
         : _socket(socket)
         , name(_name)
-        , session(_name.rbegin(),_name.rend())
+        , session(_name.rbegin(), _name.rend())
         , _state(READY)
         , game(nullptr)
         , _packets(packets)
+        , dead(false)
     {
         _socket->send(new Packet(SESSION, (uint8)session.size()+1, session.c_str()));
         createNetworkThread();
@@ -70,6 +72,12 @@ public:
         }
         createNetworkThread();
     }
+
+    bool isActive()
+    {
+        return _state == READY && !dead;
+    }
+
 private:
     void createNetworkThread()
     {
@@ -78,11 +86,10 @@ private:
             while (_state == READY)
             {
                 std::vector<Packet*> packets;
-                if (!_socket->winSelect(packets))
+                if (!_socket->select(packets))
                 {
                     delete _socket;
                     _state = DISCONNECTED;
-                    game->Disconnected(this);
                     return;
                 }
                 else
@@ -100,6 +107,7 @@ public:
     std::string name;
     std::string session;
     Game* game;
+    bool dead;
 
 private:
     PlayerState _state;
