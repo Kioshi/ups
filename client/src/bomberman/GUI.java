@@ -2,10 +2,7 @@ package bomberman;
 
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -20,54 +17,22 @@ import java.io.OutputStream;
  */
 public class GUI
 {
-    private static final boolean DEBUG = true;
+    static final boolean DEBUG = true;
     Stage stage;
     Scene connectScene;
     Scene lobbyScene;
     Scene gameScene;
-    Network network = new Network();
+    Network network;
 
 
     public GUI(Stage primaryStage) throws IOException
     {
+        network = new Network(this);
         stage = primaryStage;
-        connectScene = createConnectScene();
         lobbyScene = createLobbyScene();
         gameScene = createGameScene();
-/*
-        Scanner scanner = new Scanner(System.in);
+        connectScene = createConnectScene();
 
-        Socket clientSocket;
-        if (DEBUG)
-            clientSocket = new Socket("localhost",10001);
-        else
-        {
-            System.out.print("Addres: ");
-            String host = scanner.next();
-
-            System.out.print("Port: ");
-            int port = scanner.nextInt();
-            if (port >= 65536 || port == 0)
-            {
-                System.out.println("Wrong port");
-                return;
-            }
-            clientSocket = new Socket(host, port);
-        }
-
-        InputStream in = clientSocket.getInputStream();
-        OutputStream out = clientSocket.getOutputStream();
-
-        System.out.print("Login: ");
-        String login = scanner.next();
-        send(out,new Packet(bomberman.Packet.LOGIN, login.length(),login.getBytes()));
-        Packet packet = recv(in);
-        String session = new String(packet.data);
-        System.out.println(session);
-        scanner.next();
-
-        clientSocket.close();
-*/
     }
 
     private Scene createGameScene()
@@ -77,7 +42,13 @@ public class GUI
 
     private Scene createLobbyScene()
     {
-        return null;
+        BorderPane pane = new BorderPane();
+        ListView<String> lv = new ListView<>();
+        Button create = new Button("Create lobby");
+        pane.setCenter(lv);
+        pane.setBottom(create);
+
+        return new Scene(pane);
     }
 
     private Scene createConnectScene()
@@ -120,8 +91,14 @@ public class GUI
             if (nick.isEmpty() || hostname.isEmpty())
                 return;
 
-            network.connect(hostname,port,nick);
             stage.setScene(createConnectingScene());
+            try {
+                network.connect(hostname,port,nick);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            //stage.setScene(lobbyScene);
         });
         hostTF.setOnKeyTyped(event -> hostTF.setBorder(null));
         nickTF.setOnKeyTyped(event -> nickTF.setBorder(null));
@@ -140,28 +117,9 @@ public class GUI
         return new Scene(new Label("Connectiong..."));
     }
 
-    private static Packet recv(InputStream in) throws IOException
+    public void Connected()
     {
-        byte[] opcode = new byte[1];
-        in.read(opcode);
-        if (true)
-        {
-            byte[] size = new byte[1];
-            in.read(size);
-            byte[] data = new byte[size[0]];
-            in.read(data,0,size[0]);
-            return new Packet(opcode[0],size[0],data);
-        }
-        return new Packet(opcode[0]);
-    }
+        stage.setScene(lobbyScene);
 
-    private static void send(OutputStream out, Packet packet) throws IOException
-    {
-        out.write(packet.opcode);
-        if (packet.size > 0)
-        {
-            out.write(packet.size);
-            out.write(packet.data);
-        }
     }
 }
