@@ -4,3 +4,5 @@ server/Debug/*
 server/.vs/*
 client/out/*
 server/server.VC.*
+server/server/*.txt
+server/server/*.out
