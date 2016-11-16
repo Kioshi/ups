@@ -161,6 +161,8 @@ public:
     {
 #ifdef WIN32
         return winSelect(packets);
+#else
+        return true;
 #endif
     }
 #ifdef WIN32
