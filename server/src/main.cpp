@@ -1,8 +1,8 @@
 #include <iostream>
-#include "tcp.hpp"
+#include "tcp.h"
 #include <thread>
-#include "utils.hpp"
-#include "server.hpp"
+#include "utils.h"
+#include "server.h"
 
 int main(int argc, char** argv)
 {

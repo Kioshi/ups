@@ -3,8 +3,10 @@
 #include <mutex>
 #include <atomic>
 
+#include "utils.h"
+
 class Player;
-class PlayerPacket;
+class PlayerMessage;
 
 class Game
 {
@@ -15,17 +17,17 @@ public:
     
     void RemovePlayer(Player* player);
 
-    std::vector<PlayerPacket*>& GetPackets();
+    std::vector<PlayerMessage*>& GetMessages();
 private:
 
     void run();
 
-    void processPackets();
+    void processMessages();
     void checkState();
 
 private:
     std::vector<Player*> _players;
-    std::vector<PlayerPacket*> _packets;
+    std::vector<PlayerMessage*> _messages;
     std::atomic<bool> _running;
     std::mutex _lock;
 };

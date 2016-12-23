@@ -1,8 +1,3 @@
-server/server/Debug/*
-server/ipch/*
-server/Debug/*
-server/.vs/*
 client/out/*
-server/server.VC.*
-server/server/*.txt
-server/server/*.out
+server/build/*
+client/.idea/workspace.xml

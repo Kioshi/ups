@@ -1,5 +1,6 @@
-#include "Game.hpp"
-#include "player.hpp"
+#include "Game.h"
+
+#include "Player.h"
 #include <algorithm>
 
 Game::Game(std::vector<Player*> players)
@@ -15,16 +16,16 @@ bool Game::isRunning()
 
 void Game::RemovePlayer(Player* player)
 {
-    std::lock_guard<std::mutex> guard(_lock);
+    Guard guard(_lock);
 
     auto itr = std::find(_players.begin(), _players.end(), player);
     if (itr != _players.end())
         _players.erase(itr);
 }
 
-std::vector<PlayerPacket*>& Game::GetPackets()
+std::vector<PlayerMessage*>& Game::GetMessages()
 {
-    return _packets;
+    return _messages;
 }
 
 void Game::run()
@@ -33,18 +34,17 @@ void Game::run()
     {
         while (_running)
         {
-            processPackets();
+            processMessages();
             checkState();
         }
         //send announce winner
     });
-    acceptThread.detach();
 
 };
 
-void Game::processPackets()
+void Game::processMessages()
 {
-    for (auto packet : _packets)
+    for (auto message : _messages)
     {
         //do shits
     }
