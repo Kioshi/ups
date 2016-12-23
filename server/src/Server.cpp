@@ -249,7 +249,7 @@ void Server::leaveLobby(PlayerMessage* pm)
 
 void Server::updatePlayers()
 {
-    for (auto message : _messages)
+    while(auto* message = _messages.pop())
     {
         switch ((Opcodes)*message->message)
         {
@@ -274,6 +274,7 @@ void Server::updatePlayers()
             //kick
             break;
         }
+        delete message;
     }
 }
 

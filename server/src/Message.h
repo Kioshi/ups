@@ -1,10 +1,6 @@
 #pragma once
-#include <memory>
 #include <string>
 #include <vector>
-#include <sstream>
-
-#include "utils.h"
 
 enum Opcodes
 {
@@ -25,33 +21,11 @@ enum Opcodes
 class Message
 {
 public:
-    Message(Opcodes _opcode, std::vector<std::string> tokens)
-        : opcode(_opcode)
-    {
-        bool first = true;
-        std::stringstream ss;
-        for (auto& token : tokens)
-        {
-            if (!first)
-                ss << " ";
-            else
-                first = false;
-            ss << token;
-        }
+    Message(Opcodes _opcode, std::vector<std::string> tokens);
 
-        data = ss.str();
-    }
+    Message(Opcodes _opcode, std::string _string);
 
-    Message(Opcodes _opcode, std::string _string)
-        : opcode(_opcode)
-        , data(_string)
-    {
-    }
-
-    explicit operator Opcodes() const
-    {
-        return opcode;
-    }
+    explicit operator Opcodes() const;
     
     Opcodes opcode;
     std::string data;

@@ -12,7 +12,7 @@ PlayerMessage::PlayerMessage(Player* _player, Message* _message)
 {
 }
 
-Player::Player(TCP* socket, std::string _name, std::string incompleteMessage, std::vector<PlayerMessage*> argMessages, Server* server)
+Player::Player(TCP* socket, std::string _name, std::string incompleteMessage, LFQueue<PlayerMessage>& argMessages, Server* server)
     : _socket(socket)
     , name(_name)
     , session(_name.rbegin(), _name.rend())
@@ -29,9 +29,9 @@ Player::Player(TCP* socket, std::string _name, std::string incompleteMessage, st
     splitMessages(msgs, _incompleteMessage, DELIMITER);
     std::vector<Message*> messages;
     TCP::parseMessages(messages, msgs);
-    std::vector<PlayerMessage*>& pmessages = game ? game->GetMessages() : _messages;
+    LFQueue<PlayerMessage>& pmessages = game ? game->GetMessages() : _messages;
     for (auto message : messages)
-        pmessages.push_back(new PlayerMessage(this, message));
+        pmessages.push(new PlayerMessage(this, message));
 
     sendLobbyList();
     createNetworkThread();
@@ -89,9 +89,9 @@ void Player::createNetworkThread()
             }
             else
             {
-                std::vector<PlayerMessage*>& pmessages = game ? game->GetMessages() : _messages;
+                LFQueue<PlayerMessage>& pmessages = game ? game->GetMessages() : _messages;
                 for (auto message : messages)
-                    pmessages.push_back(new PlayerMessage(this, message));
+                    pmessages.push(new PlayerMessage(this, message));
             }
         }
     });

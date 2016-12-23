@@ -23,7 +23,7 @@ void Game::RemovePlayer(Player* player)
         _players.erase(itr);
 }
 
-std::vector<PlayerMessage*>& Game::GetMessages()
+LFQueue<PlayerMessage>& Game::GetMessages()
 {
     return _messages;
 }
@@ -44,9 +44,9 @@ void Game::run()
 
 void Game::processMessages()
 {
-    for (auto message : _messages)
+    while (auto* msg = _messages.pop())
     {
-        //do shits
+        delete msg;
     }
 }
 

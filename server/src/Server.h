@@ -8,6 +8,7 @@
 #include <atomic>
 
 #include "utils.h"
+#include "LockFree.h"
 
 class Player;
 class Game;
@@ -58,7 +59,7 @@ public:
 private:
     std::vector<Player*> _loggedPlayers;
     std::map<Player*, uint32> _disconnectedPlayers;
-    std::vector<PlayerMessage*> _messages;
+    LFQueue<PlayerMessage> _messages;
     std::vector<Game*> _games;
     std::atomic<ServerState> _state;
     std::mutex _playersLock;

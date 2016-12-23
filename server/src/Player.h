@@ -5,6 +5,8 @@
 #include <atomic>
 #include <vector>
 
+#include "LockFree.h"
+
 enum eStreams
 {
     DOWNSTREAM,
@@ -37,7 +39,7 @@ public:
 class Player
 {
 public:
-    Player(TCP* socket, std::string _name, std::string incompleteMessage, std::vector<PlayerMessage*> messages, Server* server);
+    Player(TCP* socket, std::string _name, std::string incompleteMessage, LFQueue<PlayerMessage>& messages, Server* server);
 
     ~Player();
 
@@ -66,6 +68,6 @@ private:
     PlayerState _state;
     TCP* _socket;
     std::thread* networkThread;
-    std::vector<PlayerMessage*> _messages;
+    LFQueue<PlayerMessage>& _messages;
     std::vector<std::string> toSend;
 };

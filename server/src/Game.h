@@ -4,6 +4,7 @@
 #include <atomic>
 
 #include "utils.h"
+#include "LockFree.h"
 
 class Player;
 class PlayerMessage;
@@ -17,7 +18,7 @@ public:
     
     void RemovePlayer(Player* player);
 
-    std::vector<PlayerMessage*>& GetMessages();
+    LFQueue<PlayerMessage>& GetMessages();
 private:
 
     void run();
@@ -27,7 +28,7 @@ private:
 
 private:
     std::vector<Player*> _players;
-    std::vector<PlayerMessage*> _messages;
+    LFQueue<PlayerMessage> _messages;
     std::atomic<bool> _running;
     std::mutex _lock;
 };
