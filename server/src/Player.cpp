@@ -22,6 +22,7 @@ Player::Player(TCP* socket, std::string _name, std::string incompleteMessage, LF
     , dead(false)
     , _incompleteMessage(incompleteMessage)
     , _server(server)
+    , _lobby(nullptr)
 {
     _socket->send(new Message(SESSION, session));
 
@@ -42,16 +43,41 @@ Player::~Player()
     _state = WAITING_FOR_DELETE;
     if (networkThread)
         networkThread->join();
+    if (_lobby)
+        _lobby->onPlayerLeft(this);
 
 }
 
 void Player::sendLobbyList()
 {
-    Guard guard(_server->lobbyLock);
-    for (auto* lobby : _server->lobbies)
+    std::string msg;
+    bool first = true;
+    if (_lobby)
     {
-        toSend.push_back("lobby-list " + lobby->name);
+        for (auto p : _lobby->players)
+        {
+            if (first)
+                first = false;
+            else
+                msg += " ";
+            msg += p->name;
+        }
+
     }
+    else
+    {
+        Guard guard(_server->lobbyLock);
+        for (auto* lobby : _server->lobbies)
+        {
+            if (first)
+                first = false;
+            else
+                msg += " ";
+            //msg += escapeString(lobby->name);
+            msg += lobby->name;
+        }
+    }
+    _toSend.push(new Message(LOBBY_LIST, msg));
 }
 
 void Player::Reconnect(TCP* socket, std::string incompleteMessage)
@@ -66,6 +92,9 @@ void Player::Reconnect(TCP* socket, std::string incompleteMessage)
         networkThread->join();
         delete networkThread;
     }
+    _server->removeFromDisconected(this);
+    _state = READY;
+    _socket->send(new Message(SESSION, session));
     createNetworkThread();
 }
 
@@ -83,9 +112,8 @@ void Player::createNetworkThread()
             std::vector<Message*> messages;
             if (!_socket->select(messages, _incompleteMessage))
             {
-                delete _socket;
                 _state = DISCONNECTED;
-                return;
+                break;
             }
             else
             {
@@ -93,21 +121,49 @@ void Player::createNetworkThread()
                 for (auto message : messages)
                     pmessages.push(new PlayerMessage(this, message));
             }
+            while (auto* msg = _toSend.pop())
+            {
+                _socket->send(msg);
+                delete msg;
+            }
         }
+
+        delete _socket;
+        _socket = nullptr;
+        if (_state == DISCONNECTED)
+            _server->addToDisconected(this);
+        if (_lobby)
+            leaveLobby(_lobby);
     });
 }
 
-void Player::sendJoinedLobby()
+void Player::joinLobby(Lobby* lobby, bool create)
 {
-
+    _lobby = lobby;
+    _toSend.push(new Message(create ? CREATE_LOBBY : JOIN_LOBBY, lobby->name));
+    if (!create)
+        lobby->onPlayerJoined(this);
 }
 
-void Player::sendLeftLobby()
+void Player::leaveLobby(Lobby* lobby, bool removing)
 {
-
+    _lobby = nullptr;
+    _toSend.push(new Message(LEAVE_LOBBY));
+    if (!removing)
+        lobby->onPlayerLeft(this);
 }
 
-void Player::sendError(std::string error)
+void Player::sendMessage(std::string msg)
 {
+    _toSend.push(new Message(MESSAGE,msg));
+}
 
+Lobby* Player::getLobby()
+{
+    return _lobby;
+}
+
+void Player::disconnect()
+{
+    _state = DISCONNECTED;
 }

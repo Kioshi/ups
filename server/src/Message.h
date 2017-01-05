@@ -12,11 +12,13 @@ enum Opcodes
     LEAVE_LOBBY,
     START_GAME,
     KICK_PLAYER,
-    SEND_MESSAGE,
+    FF,
+    CARD,
+    PLAY,
     QUIT,
+    MESSAGE,
     UNUSED, //placehoder
 };
-
 
 class Message
 {
@@ -25,8 +27,12 @@ public:
 
     Message(Opcodes _opcode, std::string _string);
 
+    Message(Opcodes _opcode);
+
     explicit operator Opcodes() const;
     
     Opcodes opcode;
     std::string data;
+
+    std::string toString();
 };

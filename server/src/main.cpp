@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "server.h"
 
+#define DEBUGING
 int main(int argc, char** argv)
 {
     uint16 port;

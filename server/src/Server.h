@@ -29,12 +29,13 @@ public:
     Server(uint16 port);
     
     void run();
+    void addToDisconected(Player* player);
+    void removeFromDisconected(Player* player);
     
 private:
 
     void updateDisconnected(uint32 diff);
 
-    void addToDisconected(Player* player);
 
     void removePlayer(Player* player);
     
@@ -52,7 +53,8 @@ private:
     void createLobby(PlayerMessage* pm);
     void joinLobby(PlayerMessage* pm);
     void leaveLobby(PlayerMessage* pm);
-
+    void kickPlayer(PlayerMessage * message);
+    void startGame();
 public:
     std::mutex lobbyLock;
     std::vector<Lobby*> lobbies;

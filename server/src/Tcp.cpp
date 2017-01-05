@@ -106,7 +106,8 @@ void TCP::send(const char * buffer, int lenght)
 
 void TCP::send(Message* message)
 {
-    send(message->data.c_str(), (int)message->data.size());
+    std::string msg = message->toString();
+    send(msg.c_str(), (int)msg.size());
 }
 
 void TCP::parseMessages(std::vector<Message*>& messages, std::vector<std::string>& msgs)
@@ -118,7 +119,7 @@ void TCP::parseMessages(std::vector<Message*>& messages, std::vector<std::string
 
         if (tokens.empty())
             continue;
-
+#ifndef ef
 #define ef else if
 
         Opcodes opcode;
@@ -129,11 +130,12 @@ void TCP::parseMessages(std::vector<Message*>& messages, std::vector<std::string
         ef(tokens[0] == "LEAVE_LOBBY") opcode = LEAVE_LOBBY;
         ef(tokens[0] == "START_GAME") opcode = START_GAME;
         ef(tokens[0] == "KICK_PLAYER") opcode = KICK_PLAYER;
-        ef(tokens[0] == "SEND_MESSAGE") opcode = SEND_MESSAGE;
+        //ef(tokens[0] == "SEND_MESSAGE") opcode = SEND_MESSAGE;
         ef(tokens[0] == "QUIT") opcode = QUIT;
         else
             continue;
-        
+#undef ef
+#endif
         tokens.erase(tokens.begin());
         if (validateMessage(opcode, tokens))
         {
@@ -149,17 +151,16 @@ bool TCP::validateMessage(enum Opcodes opcode, std::vector<std::string>& tokens)
     {
         case LOGIN:
         case SESSION:
+        case CREATE_LOBBY:
+        case JOIN_LOBBY:
+        case KICK_PLAYER:
             return !tokens.empty();
             break;
         case LOBBY_LIST:
-            tokens.clear();
-            return true;
-        case CREATE_LOBBY:
-        case JOIN_LOBBY:
         case LEAVE_LOBBY:
         case START_GAME:
-        case KICK_PLAYER:
-        case SEND_MESSAGE:
+            tokens.clear();
+            return true;
         case QUIT:
         case UNUSED:
         default:
@@ -181,7 +182,7 @@ bool TCP::recieve(std::vector<Message*>& messages, std::string& incompleteMessag
             return false;
         message += buf;
         memset(buf, 0, sizeof(buf));
-    } while (bytes_read > 0);
+    } while (bytes_read == sizeof(buf));
 
     std::vector<std::string> msgs;
     splitMessages(msgs, message, DELIMITER);

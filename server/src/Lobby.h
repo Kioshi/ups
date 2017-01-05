@@ -10,11 +10,13 @@ class Lobby
 public:
 
     Lobby(Player* _owner, std::string _name);
+    ~Lobby();
 
     friend bool operator==(const Lobby& lobby, const std::string& string);
     friend bool operator==(const Lobby& lobby, const class Player& player);
-
-
+    void onPlayerJoined(Player* player);
+    void onPlayerLeft(Player* player);
+    Player* findPlayer(std::string name);
     std::string name;
     Player* owner;
     std::vector<Player*> players;

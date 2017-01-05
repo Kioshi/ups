@@ -20,7 +20,7 @@ enum eTimers
 
 enum eSpecialChars
 {
-    DELIMITER = ';',
+    DELIMITER = '\n',
     ESCAPE = '\\',
     TOKEN = ' ',
 };
@@ -46,11 +46,30 @@ static void splitMessages(std::vector<std::string>& messages, std::string& text,
 
         if (i < text.size() || delimiter == TOKEN)
         {
-            if (i > 1)
+            if (i >= 1)
                 messages.push_back(text.substr(0, i));
-            text = text.substr(i + 1);
+            if (i + 1 <= text.length())
+                text = text.substr(i + 1);
+            else
+                text.clear();
         }
         else
             break;
     }
+}
+
+static std::string escapeString(std::string str)
+{
+    std::string msg;
+    std::vector<std::string> tokens;
+    splitMessages(tokens, str, TOKEN);
+    for (uint32 i = 0; i < tokens.size(); i++)
+    {
+        if (i != 0)
+            msg += "\\ ";
+        msg += tokens[i];
+    }
+    if (!str.empty())
+        msg += "\\ " + str;
+    return msg;
 }

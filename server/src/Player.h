@@ -49,9 +49,12 @@ public:
 
     bool isActive();
 
-    void sendJoinedLobby();
-    void sendLeftLobby();
-    void sendError(std::string error);
+    void joinLobby(class Lobby* lobby, bool create = false);
+    void leaveLobby(class Lobby* lobby, bool removing = false);
+    void sendMessage(std::string error);
+    void disconnect();
+
+    Lobby* getLobby();
 
 private:
     void createNetworkThread();
@@ -69,5 +72,6 @@ private:
     TCP* _socket;
     std::thread* networkThread;
     LFQueue<PlayerMessage>& _messages;
-    std::vector<std::string> toSend;
+    LFQueue<Message> _toSend;
+    class Lobby* _lobby;
 };

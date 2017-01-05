@@ -80,7 +80,7 @@ void Server::run()
                         return;
                     }
 
-                    if (tokens[0] == "login")
+                    if (tokens[0] == "LOGIN")
                     {
                         if (checkNickName(tokens[1]))
                         {
@@ -89,14 +89,17 @@ void Server::run()
                             addNewPlayer(player);
                             return;
                         }
+                        std::cout << "Client " << socket << " name: " << tokens[1] << " was already taken disconnecting" << std::endl;
                     }
-                    if (tokens[0] == "session")
+                    if (tokens[0] == "SESSION")
                     {
                         if (Player* player = getPlayerBySession(tokens[1]))
                         {
+                            std::cout << "Client " << socket << " session: " << tokens[1] << " reconnected" << std::endl;
                             player->Reconnect(client, secondMsg);
                             return;
                         }
+                        std::cout << "Client " << socket << " session: " << tokens[1] << " not found disconnecting" << std::endl;
                     }
                     delete client;
                 }).detach();
@@ -160,6 +163,12 @@ void Server::addToDisconected(Player* player)
     _disconnectedPlayers[player] = DISCONNECT_TIMEOUT;
 }
 
+void Server::removeFromDisconected(Player* player)
+{
+    Guard guard(_disconnectedLock);
+    _disconnectedPlayers.erase(player);
+}
+
 void Server::removePlayer(Player* player)
 {
     {
@@ -168,6 +177,17 @@ void Server::removePlayer(Player* player)
     }
     if (player->game)
         player->game->RemovePlayer(player);
+    if (Lobby* lobby = player->getLobby())
+    {
+        Guard guard(lobbyLock);
+        auto itr = std::find(lobbies.begin(), lobbies.end(), lobby);
+        if (itr != lobbies.end() && lobby->owner == player)
+        {
+            lobbies.erase(itr);
+            delete lobby;
+        }
+    }
+
     delete player;
 }
 
@@ -191,6 +211,11 @@ void Server::updateGames()
 
 void Server::createLobby(PlayerMessage* pm)
 {
+    if (pm->player->getLobby())
+    {
+        pm->player->sendMessage("You are already in lobby!");
+        return;
+    }
     Guard guard(lobbyLock);
     auto itr = std::find(lobbies.begin(), lobbies.end(), pm->message->data);
     
@@ -198,16 +223,21 @@ void Server::createLobby(PlayerMessage* pm)
     {
         Lobby* lobby = new Lobby(pm->player, pm->message->data);
         lobbies.push_back(lobby);
-        pm->player->sendJoinedLobby();
+        pm->player->joinLobby(lobby, true);
     }
     else
     {
-        pm->player->sendError("Lobby with this name already exists!");
+        pm->player->sendMessage("Lobby with this name already exists!");
     }
 
 }
 void Server::joinLobby(PlayerMessage* pm)
 {
+    if (pm->player->getLobby())
+    {
+        pm->player->sendMessage("You are already in lobby!");
+        return;
+    }
     Guard guard(lobbyLock);
 
     auto itr = std::find(lobbies.begin(), lobbies.end(), pm->message->data);
@@ -215,36 +245,74 @@ void Server::joinLobby(PlayerMessage* pm)
     if (itr != lobbies.end())
     {
         if ((*itr)->players.size() >= 4)
-            pm->player->sendError("Lobby is full!");
+            pm->player->sendMessage("Lobby is full!");
         else
-            pm->player->sendJoinedLobby();
+            pm->player->joinLobby(*itr);
     }
     else
     {
-        pm->player->sendError("Lobby with this name does not exists!");
+        pm->player->sendMessage("Lobby with this name does not exists!");
     }
 
 }
 void Server::leaveLobby(PlayerMessage* pm)
 {
     Guard guard(lobbyLock);
-    auto itr = std::find(lobbies.begin(), lobbies.end(), *pm->player);
+    Lobby* lobby = pm->player->getLobby();
 
-    if (itr != lobbies.end())
+    if (lobby)
     {
-        Lobby* lobby = *itr;
-        if (lobby->owner == pm->player)
+        pm->player->leaveLobby(lobby);
+        auto itr = std::find(lobbies.begin(), lobbies.end(), lobby);
+        if (itr != lobbies.end() && lobby->owner == pm->player)
         {
             lobbies.erase(itr);
             delete lobby;
         }
-        pm->player->sendLeftLobby();
     }
     else
     {
-        pm->player->sendError("You are not in a lobby!");
+        pm->player->sendMessage("You are not in a lobby!");
     }
+}
 
+void Server::kickPlayer(PlayerMessage * pm)
+{
+    Guard guard(lobbyLock);
+    Lobby* lobby = pm->player->getLobby();
+
+    if (lobby)
+    {
+        if (lobby->owner != pm->player)
+        {
+            pm->player->sendMessage("You are not lobby owner!");
+            return;
+        }
+
+        Player* target = lobby->findPlayer(pm->message->data);
+        if (!target)
+        {
+            pm->player->sendMessage("Player "+pm->message->data+" is not in your lobby!");
+            return;
+        }
+        target->sendMessage("You have been kicked from lobby!");
+        target->leaveLobby(lobby);
+        auto itr = std::find(lobbies.begin(), lobbies.end(), lobby);
+        if (itr != lobbies.end() && lobby->owner == target)
+        {
+            lobbies.erase(itr);
+            delete lobby;
+        }
+    }
+    else
+    {
+        pm->player->sendMessage("You are not in a lobby!");
+    }
+}
+
+void Server::startGame()
+{
+    throw std::logic_error("The method or operation is not implemented.");
 }
 
 void Server::updatePlayers()
@@ -266,8 +334,11 @@ void Server::updatePlayers()
             leaveLobby(message);
             break;
         case START_GAME:
+            startGame();
+            break;
         case KICK_PLAYER:
-        case SEND_MESSAGE:
+            kickPlayer(message);
+            break;
         case QUIT:
             break;
         default:
