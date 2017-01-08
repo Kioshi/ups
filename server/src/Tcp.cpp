@@ -210,11 +210,12 @@ bool TCP::select(std::vector<Message*>& messages, std::string& incompleteMessage
 #ifdef WIN32
     TIMEVAL tv = { 0 };
 #else
-    timeval tv = { 0 };
+    struct timeval tv = { 0 };
 #endif
-
+    tv.tv_sec = 0;
     tv.tv_usec = 10 * IN_MICROSECONDS;
-    int ret = ::select(0, &readfds, NULL, NULL, &tv);
+
+    int ret = ::select(_socket+1, &readfds, NULL, NULL, &tv);
     if (ret == -1)
         return false;
     else if (ret == 0)
@@ -228,12 +229,6 @@ bool TCP::select(std::vector<Message*>& messages, std::string& incompleteMessage
 
     return true;
 }
-/*#else
-bool TCP::select(std::vector<Message*>& messages, std::string& incompleteMessage)
-{
-    return true;
-}
-#endif*/
 
 void TCP::DieWithError(char *errorMessage)
 {

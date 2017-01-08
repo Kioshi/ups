@@ -54,10 +54,11 @@ public class Main
                 else
                 {
                     System.out.print("Addres: ");
-                    host = scanner.next();
+                    host = scanner.nextLine();
 
                     System.out.print("Port: ");
                     port = scanner.nextInt();
+                    scanner.nextLine();
                     if (port >= 65536 || port == 0)
                     {
                         System.out.println("Wrong port");

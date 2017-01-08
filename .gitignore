@@ -1,3 +1,6 @@
+*
+!client
+!server
 client/out/*
 server/build/*
 client/.idea/workspace.xml
