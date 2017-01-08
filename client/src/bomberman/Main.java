@@ -15,7 +15,7 @@ import static java.lang.System.in;
 
 public class Main
 {
-    static boolean DEBUG = true;
+    static boolean DEBUG = false;
     OutputStream out;
     static char DELIMITER = '\n';
     static char ESCAPE = '\\';
@@ -34,10 +34,10 @@ public class Main
 
     public static void main(String[] args) throws IOException
     {
-        new Main();
+        new Main(args);
     }
 
-    Main()
+    Main(String[] args)
     {
         Scanner scanner = new Scanner(in);
 
@@ -53,12 +53,23 @@ public class Main
                 }
                 else
                 {
-                    System.out.print("Addres: ");
-                    host = scanner.nextLine();
+                    if (args.length > 0)
+                        host = args[0];
+                    else
+                    {
+                        System.out.print("Addres: ");
+                        host = scanner.nextLine();
+                    }
 
-                    System.out.print("Port: ");
-                    port = scanner.nextInt();
-                    scanner.nextLine();
+                    if (args.length > 1)
+                        port = Integer.parseInt(args[1]);
+                    else
+                    {
+                        System.out.print("Port: ");
+                        port = scanner.nextInt();
+                        scanner.nextLine();
+                    }
+                    args = new String[0];
                     if (port >= 65536 || port == 0)
                     {
                         System.out.println("Wrong port");

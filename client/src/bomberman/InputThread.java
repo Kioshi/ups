@@ -53,6 +53,11 @@ public class InputThread extends Thread
                     String name = "";
                     for (int i = 1; i < parts.length; i++)
                         name += (i == 1 ? "" : " ") + parts[i];
+                    if (name.trim().isEmpty())
+                    {
+                        System.out.println("Lobby need a name!");
+                        break;
+                    }
                     game.send("CREATE_LOBBY " + game.escapeString(name) );
                     break;
                 }
@@ -66,6 +71,11 @@ public class InputThread extends Thread
                     String name = "";
                     for (int i = 1; i < parts.length; i++)
                         name += (i == 1 ? "" : " ") + parts[i];
+                    if (name.trim().isEmpty())
+                    {
+                        System.out.println("Lobby need a name!");
+                        break;
+                    }
                     game.send("JOIN_LOBBY " + game.escapeString(name) );
                     break;
                 }
@@ -117,14 +127,21 @@ public class InputThread extends Thread
                     game.running.set(false);
                     break cycle;
                 case "kick":
-                    game.send("KICK_PLAYER "+game.escapeString(parts[1]));
+                    if (game.inGame.get())
+                    {
+                        if (parts.length <= 1)
+                            game.send("KICK_PLAYER " + game.escapeString(parts[1]));
+                        else
+                            System.out.println("I dont know maybe it would be good to specifie name of player you wanna kick!");
+                    }
+                    else
+                        System.out.println("You cant kick player from game!");
                     break;
                 default:
                     System.out.println("Unknown command! Use command 'controls' for list of available commands.");
                     break;
             }
         }
-        System.out.println("Bye from a thread!");
     }
 
     private boolean checkConnected(String part)
@@ -148,15 +165,22 @@ public class InputThread extends Thread
 
     private void handlePlay(String[] parts)
     {
-        if (parts.length == 1)
+        if (parts.length < 2)
         {
-            System.out.println("End of turn!");
+            System.out.println("You need to specify what do you want to play!");
             return;
         }
 
         boolean have = false;
         if (parts[1].toLowerCase().equals("triple"))
-            have = game.haveCard(parts[2].toUpperCase(),3);
+        {
+            if (parts.length < 4)
+            {
+                System.out.println("Syntax for triple is: play triple <CARD> <NAME OF TARGET>");
+                return;
+            }
+            have = game.haveCard(parts[2].toUpperCase(), 3);
+        }
         else
             have = game.haveCard(parts[1].toUpperCase(),1);
 

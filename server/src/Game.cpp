@@ -23,17 +23,10 @@ Game::Game(std::vector<Player*> players)
             p->addCard(pack.front());
             pack.pop_front();
         }
-
-        for (uint8 i = 0; i < A; i++)
-            p->addCard((Card)i);
-        for (uint8 i = 0; i < 3; i++)
-            p->addCard(A);
-
     }
     for (uint8 i = 0; i < _players.size() - 1; i++)
         pack.push_back(BOMB);
     std::random_shuffle(pack.begin(), pack.end());
-    pack.push_front(BOMB);
 
     run();
 }
