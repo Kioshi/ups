@@ -1,10 +1,11 @@
 #include "Player.h"
 
+#include "Message.h"
 #include "Game.h"
 #include "Lobby.h"
-#include "tcp.h"
+#include "Tcp.h"
 #include "Server.h"
-#include "Message.h"
+#include <random>
 
 PlayerMessage::PlayerMessage(Player* _player, Message* _message)
     : player(_player)
@@ -24,7 +25,7 @@ Player::Player(TCP* socket, std::string _name, std::string incompleteMessage, LF
     , _server(server)
     , _lobby(nullptr)
 {
-    _socket->send(new Message(SESSION, session));
+    _socket->send(new Message(SMSG_SESSION, session));
 
     std::vector<std::string> msgs;
     splitMessages(msgs, _incompleteMessage, DELIMITER);
@@ -77,7 +78,7 @@ void Player::sendLobbyList()
             msg += lobby->name;
         }
     }
-    _toSend.push(new Message(LOBBY_LIST, msg));
+    _toSend.push(new Message(SMSG_LOBBY_LIST, msg));
 }
 
 void Player::Reconnect(TCP* socket, std::string incompleteMessage)
@@ -94,7 +95,7 @@ void Player::Reconnect(TCP* socket, std::string incompleteMessage)
     }
     _server->removeFromDisconected(this);
     _state = READY;
-    _socket->send(new Message(SESSION, session));
+    _socket->send(new Message(SMSG_SESSION, session));
     createNetworkThread();
 }
 
@@ -128,7 +129,8 @@ void Player::createNetworkThread()
             }
         }
 
-        delete _socket;
+        if (_socket)
+            delete _socket;
         _socket = nullptr;
         if (_state == DISCONNECTED)
             _server->addToDisconected(this);
@@ -137,10 +139,92 @@ void Player::createNetworkThread()
     });
 }
 
+void Player::endGame(Player * winner)
+{
+    game = nullptr;
+    _toSend.push(winner ? new Message(SMSG_GAME_END,winner->name) : new Message(SMSG_GAME_END));
+}
+
+void Player::ff()
+{
+    game = nullptr;
+    _toSend.push(new Message(SMSG_FF));
+}
+
+void Player::startGame(std::string startingPlayer, Game* _game)
+{
+    _lobby = nullptr;
+    game = _game;
+    _toSend.push(new Message(SMSG_START_GAME, startingPlayer));
+}
+
+void Player::send(Opcodes opcode, std::string msg)
+{
+    _toSend.push(new Message(opcode, msg));
+}
+
+Card Player::removeRandomCard()
+{
+    auto item = cards.begin();
+
+    std::random_device rd;
+    std::mt19937 eng(rd());
+    std::uniform_int_distribution<> distr(0, (int)cards.size());
+    std::advance(item, distr(eng));
+    Card c = item->first;
+    removeCard(c);
+    return c;
+}
+
+uint8 Player::countCards()
+{
+    uint8 count = 0;
+    for (auto p : cards)
+        count += p.second;
+    return count;
+}
+
+void Player::play(std::string card)
+{
+    _toSend.push(new Message(SMSG_PLAY, card));
+}
+
+void Player::peak(std::deque<Card>& pack)
+{
+    std::string msg = "PEAK";
+    for (uint8 i = 0; i < 3 && i < pack.size(); i++)
+        msg += " " + Game::encodeCard(pack[i]);
+
+    _toSend.push(new Message(SMSG_PLAY, msg));
+}
+
+bool Player::haveCard(Card c, uint8 count)
+{
+    auto itr = cards.find(c);
+    return itr != cards.end() && itr->second >= count;
+}
+
+void Player::removeCard(Card c, uint8 count)
+{
+    auto itr = cards.find(c);
+    if (itr->second > count)
+        itr->second -= count;
+    else
+        cards.erase(itr);
+    for (uint8 i = 0; i < count; i++)
+        _toSend.push(new Message(SMSG_DISCARD, Game::encodeCard(c)));
+}
+
+void Player::addCard(Card c)
+{
+    cards[c]++;
+    _toSend.push(new Message(SMSG_DRAW, Game::encodeCard(c)));
+}
+
 void Player::joinLobby(Lobby* lobby, bool create)
 {
     _lobby = lobby;
-    _toSend.push(new Message(create ? CREATE_LOBBY : JOIN_LOBBY, lobby->name));
+    _toSend.push(new Message(create ? SMSG_CREATE_LOBBY : SMSG_JOIN_LOBBY, lobby->name));
     if (!create)
         lobby->onPlayerJoined(this);
 }
@@ -148,19 +232,24 @@ void Player::joinLobby(Lobby* lobby, bool create)
 void Player::leaveLobby(Lobby* lobby, bool removing)
 {
     _lobby = nullptr;
-    _toSend.push(new Message(LEAVE_LOBBY));
+    _toSend.push(new Message(SMSG_LEAVE_LOBBY));
     if (!removing)
         lobby->onPlayerLeft(this);
 }
 
 void Player::sendMessage(std::string msg)
 {
-    _toSend.push(new Message(MESSAGE,msg));
+    _toSend.push(new Message(SMSG_MESSAGE,msg));
 }
 
 Lobby* Player::getLobby()
 {
     return _lobby;
+}
+
+Server* Player::getServer()
+{
+    return _server;
 }
 
 void Player::disconnect()

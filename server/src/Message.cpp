@@ -1,7 +1,7 @@
-#pragma once
 #include "Message.h"
 
 #include <sstream>
+#include <assert.h>
 #include "utils.h"
 
 Message::Message(Opcodes _opcode, std::vector<std::string> tokens)
@@ -43,16 +43,23 @@ std::string Message::toString()
     std::string op = "";
     switch (opcode)
     {
-        case LOBBY_LIST: op = "LOBBY_LIST"; break;
-        case CREATE_LOBBY: op = "CREATE_LOBBY"; break;
-        case JOIN_LOBBY: op = "JOIN_LOBBY"; break;
-        case LEAVE_LOBBY: op = "LEAVE_LOBBY"; break;
-        case START_GAME: op = "START_GAME"; break;
-        case KICK_PLAYER: op = "KICK_PLAYER"; break;
-        case FF: op = "FF"; break;
-        case CARD: op = "CARD"; break;
-        case PLAY: op = "PLAY"; break;
-        case MESSAGE: op = "MESSAGE"; break;
+        case SMSG_SESSION: op = "SMSG_SESSION"; break;
+        case SMSG_LOBBY_LIST: op = "SMSG_LOBBY_LIST"; break;
+        case SMSG_CREATE_LOBBY: op = "SMSG_CREATE_LOBBY"; break;
+        case SMSG_JOIN_LOBBY: op = "SMSG_JOIN_LOBBY"; break;
+        case SMSG_LEAVE_LOBBY: op = "SMSG_LEAVE_LOBBY"; break;
+        case SMSG_START_GAME: op = "SMSG_START_GAME"; break;
+        case SMSG_KICK_PLAYER: op = "SMSG_KICK_PLAYER"; break;
+        case SMSG_FF: op = "SMSG_FF"; break;
+        case SMSG_DRAW: op = "SMSG_DRAW"; break;
+        case SMSG_PLAY: op = "SMSG_PLAY"; break;
+        case SMSG_CARDS: op = "SMSG_CARDS"; break;
+        case SMSG_DISCARD: op = "SMSG_DISCARD"; break;
+        case SMSG_MESSAGE: op = "SMSG_MESSAGE"; break;
+        case SMSG_GAME_END: op = "SMSG_GAME_END"; break;
+        default:
+            assert(!(opcode < UNUSED));
+            break;
     }
     return op + (data.empty() ? "" : (" " + data)) + (char)DELIMITER;
 }

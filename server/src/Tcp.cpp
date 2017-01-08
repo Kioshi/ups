@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
+#include <string.h>
 
 #include "Message.h"
 
@@ -19,6 +20,7 @@ typedef int socklen_t;
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <time.h>
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 #endif
 
 #include <iostream>
@@ -88,10 +90,6 @@ void TCP::accept(std::function<void(int)> lambda)
     int clientSocket = (int)::accept(_socket, (struct sockaddr *)&addr, &addrLen);
     if (clientSocket > 0)
         lambda(clientSocket);
-    /*else
-    {
-        DieWithError("Accept error");
-    }*/
 }
 
 int TCP::recv(char * buffer, int lenght)
@@ -123,15 +121,20 @@ void TCP::parseMessages(std::vector<Message*>& messages, std::vector<std::string
 #define ef else if
 
         Opcodes opcode;
-        if(tokens[0] == "LOGIN") opcode = LOGIN;
-        ef(tokens[0] == "LOBBY_LIST") opcode = LOBBY_LIST;
-        ef(tokens[0] == "CREATE_LOBBY") opcode = CREATE_LOBBY;
-        ef(tokens[0] == "JOIN_LOBBY") opcode = JOIN_LOBBY;
-        ef(tokens[0] == "LEAVE_LOBBY") opcode = LEAVE_LOBBY;
-        ef(tokens[0] == "START_GAME") opcode = START_GAME;
-        ef(tokens[0] == "KICK_PLAYER") opcode = KICK_PLAYER;
-        //ef(tokens[0] == "SEND_MESSAGE") opcode = SEND_MESSAGE;
-        ef(tokens[0] == "QUIT") opcode = QUIT;
+        if (tokens[0] == "CMSG_LOGIN") opcode = CMSG_LOGIN;
+        ef (tokens[0] == "CMSG_SESSION") opcode = CMSG_SESSION;
+        ef (tokens[0] == "CMSG_LOBBY_LIST") opcode = CMSG_LOBBY_LIST;
+        ef (tokens[0] == "CMSG_CREATE_LOBBY") opcode = CMSG_CREATE_LOBBY;
+        ef (tokens[0] == "CMSG_JOIN_LOBBY") opcode = CMSG_JOIN_LOBBY;
+        ef (tokens[0] == "CMSG_LEAVE_LOBBY") opcode = CMSG_LEAVE_LOBBY;
+        ef (tokens[0] == "CMSG_START_GAME") opcode = CMSG_START_GAME;
+        ef (tokens[0] == "CMSG_KICK_PLAYER") opcode = CMSG_KICK_PLAYER;
+        ef (tokens[0] == "CMSG_FF") opcode = CMSG_FF;
+        ef (tokens[0] == "CMSG_DRAW") opcode = CMSG_DRAW;
+        ef (tokens[0] == "CMSG_CARDS") opcode = CMSG_CARDS;
+        ef (tokens[0] == "CMSG_PLAY") opcode = CMSG_PLAY;
+        ef (tokens[0] == "CMSG_DISCARD") opcode = CMSG_DISCARD;
+        ef (tokens[0] == "CMSG_QUIT") opcode = CMSG_QUIT;
         else
             continue;
 #undef ef
@@ -149,19 +152,23 @@ bool TCP::validateMessage(enum Opcodes opcode, std::vector<std::string>& tokens)
 {
     switch (opcode)
     {
-        case LOGIN:
-        case SESSION:
-        case CREATE_LOBBY:
-        case JOIN_LOBBY:
-        case KICK_PLAYER:
+        case CMSG_LOGIN:
+        case CMSG_SESSION:
+        case CMSG_CREATE_LOBBY:
+        case CMSG_JOIN_LOBBY:
+        case CMSG_KICK_PLAYER:
+        case CMSG_PLAY:
             return !tokens.empty();
             break;
-        case LOBBY_LIST:
-        case LEAVE_LOBBY:
-        case START_GAME:
+        case CMSG_LOBBY_LIST:
+        case CMSG_LEAVE_LOBBY:
+        case CMSG_START_GAME:
+        case CMSG_FF:
+        case CMSG_DRAW:
+        case CMSG_CARDS:
             tokens.clear();
             return true;
-        case QUIT:
+        case CMSG_QUIT:
         case UNUSED:
         default:
             return false;
@@ -192,7 +199,7 @@ bool TCP::recieve(std::vector<Message*>& messages, std::string& incompleteMessag
     return true;
 }
 
-#ifdef WIN32
+//#ifdef WIN32
 bool TCP::select(std::vector<Message*>& messages, std::string& incompleteMessage)
 {
     fd_set readfds;
@@ -200,8 +207,12 @@ bool TCP::select(std::vector<Message*>& messages, std::string& incompleteMessage
     FD_ZERO(&readfds);
 
     FD_SET(_socket, &readfds);
-
+#ifdef WIN32
     TIMEVAL tv = { 0 };
+#else
+    timeval tv = { 0 };
+#endif
+
     tv.tv_usec = 10 * IN_MICROSECONDS;
     int ret = ::select(0, &readfds, NULL, NULL, &tv);
     if (ret == -1)
@@ -217,12 +228,12 @@ bool TCP::select(std::vector<Message*>& messages, std::string& incompleteMessage
 
     return true;
 }
-#else
+/*#else
 bool TCP::select(std::vector<Message*>& messages, std::string& incompleteMessage)
 {
     return true;
 }
-#endif
+#endif*/
 
 void TCP::DieWithError(char *errorMessage)
 {

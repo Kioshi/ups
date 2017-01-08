@@ -30,13 +30,14 @@ public class Main
     int port;
     Socket clientSocket = null;
     BufferedReader br = null;
+    String nick;
 
     public static void main(String[] args) throws IOException
     {
         new Main();
     }
 
-    Main() throws IOException
+    Main()
     {
         Scanner scanner = new Scanner(in);
 
@@ -80,13 +81,13 @@ public class Main
         while(session == null)
         {
             String s;
-            String nick = scanner.next().trim();
+            nick = scanner.nextLine().trim();
             if (nick.charAt(0) == '_' && nick.length() > 1)
             {
-                s = "SESSION " + nick.substring(1) + DELIMITER;
+                s = "SESSION " + escapeString(nick.substring(1));
             }
             else
-                s = "LOGIN " + nick + DELIMITER;
+                s = "LOGIN " + escapeString(nick);
 
             try
             {
@@ -107,6 +108,10 @@ public class Main
                 if (!reconnect())
                     return;
             }
+            else
+            {
+                session = session.split(" ")[1];
+            }
         }
 
         connected.set(true);
@@ -116,13 +121,22 @@ public class Main
         String msg = "";
         while (running.get())
         {
-            msg = br.readLine();
+            try
+            {
+                msg = br.readLine();
+            } catch (IOException e)
+            {
+                System.err.println("Server crashed!");
+                running.set(false);
+                System.exit(0);
+
+            }
             if (msg == null && !attemptToReconnect())
             {
                 if (running.get())
                     System.err.println("Cant reconnect!");
                 running.set(false);
-                return;
+                System.exit(0);
             }
 
             if (msg == null)
@@ -137,6 +151,7 @@ public class Main
                 break;
             }
         }
+        System.out.println("Press enter to exit");
     }
 
     private boolean reconnect()
@@ -167,8 +182,8 @@ public class Main
             {
                 clientSocket = new Socket(host, port);
                 out = clientSocket.getOutputStream();
-                String s = "SESSION "+session+DELIMITER;
-                out.write(s.getBytes());
+                String s;
+                send("SESSION "+session);
                 br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 s = br.readLine();
                 if (s != null)
@@ -201,59 +216,125 @@ public class Main
 
         switch (parts[0])
         {
-            case "LOBBY_LIST":
+            case "SMSG_LOBBY_LIST":
                 parseLobbyList(parts);
                 break;
-            case "CREATE_LOBBY":
+            case "SMSG_CREATE_LOBBY":
                 createLobby(parts[1]);
                 break;
-            case "JOIN_LOBBY":
-                createLobby(parts[1]);
+            case "SMSG_JOIN_LOBBY":
+                joinLobby(parts[1]);
                 break;
-            case "LEAVE_LOBBY":
+            case "SMSG_LEAVE_LOBBY":
                 leaveLobby();
                 break;
-            case "START_GAME":
-                startGame();
+            case "SMSG_START_GAME":
+                startGame(parts[1]);
                 break;
-            case "MESSAGE":
+            case "SMSG_MESSAGE":
                 String s = "";
                 for (int i = 1; i < parts.length; i++)
                     s += parts[i]+" ";
-                System.out.println(s.trim());
+                System.out.println(s.replace("\\\\","\\").replace("\\ "," ").trim());
                 break;
-            case "FF":
+            case "SMSG_FF":
                 ff();
                 break;
-            case "CARD":
-                newCard(parts);
+            case "SMSG_DRAW":
+                newCard(parts[1]);
                 break;
-            case "PLAY":
-                played(parts);
+            case "SMSG_DISCARD":
+                removeCard(parts[1]);
+                break;
+            case "SMSG_CARDS":
+                printCards(parts);
+                break;
+            case "SMSG_GAME_END":
+                endGame(parts);
+                break;
+            case "SMSG_PLAY":
+                play(parts);
                 break;
         }
 
         return true;
     }
 
+    private void play(String[] parts)
+    {
+        switch (parts[1].toLowerCase())
+        {
+            case "peak":
+                System.out.println("You peaked top cards from deck (in this order):");
+                for (int i = 2; i < parts.length; i++)
+                    System.out.println(parts[i]);
+                break;
+            case "shuffle":
+                System.out.println("You shuffled deck.");
+                break;
+            case "run":
+                System.out.println("You ran from one bomb!");
+                break;
+            case "kick":
+                System.out.println("You kicked one bomb to another player!");
+                break;
+            case "steal":
+                System.out.println("You stole card from player.");
+                break;
+            case "triple":
+                System.out.println("You discarded random card from player.");
+                break;
+        }
+    }
+
+    private void endGame(String[] parts)
+    {
+        inGame.set(false);
+        if (parts.length == 1)
+        {
+            System.out.println("Game ended and somehow noone is a winner...");
+        }
+        else if (parts[1].equals(nick))
+        {
+            System.out.println("Congratulation you won The Game!");
+        }
+        else
+            System.out.println("Player "+parts[1]+" win The Game!");
+    }
+
+    private void newCard(String card)
+    {
+        System.out.println("You have got new card: "+card);
+        int count = cards.containsKey(card) ? cards.get(card) : 0;
+        cards.put(card, count + 1);
+    }
+
+    private void removeCard(String card)
+    {
+        System.out.println("You lost card: "+card);
+        int count = cards.containsKey(card) ? cards.get(card) : 0;
+        if (count == 1)
+            cards.remove(card);
+        else if (count == 0)
+        {
+
+        }
+        else
+            cards.put(card,count -1);
+    }
+
     private void ff()
     {
-
+        System.out.println("You left the game.");
+        inGame.set(false);
+        send("LOBBY_LIST");
     }
 
-    private void played(String[] parts)
+    private void startGame(String name)
     {
-
-    }
-
-    private void newCard(String[] parts)
-    {
-
-    }
-
-    private void startGame()
-    {
-        send("START_GAME"+DELIMITER);
+        System.out.println("The Game has started. Starting player is "+name);
+        inLobby.set(false);
+        inGame.set(true);
     }
 
     String[] split(String text)
@@ -275,7 +356,7 @@ public class Main
             }
 
             if (i >= 1)
-                messages.add(text.substring(0, i));
+                messages.add(unescape(text.substring(0, i)));
             if (i + 1 <= text.length())
                 text = text.substring(i + 1);
             else
@@ -321,6 +402,7 @@ public class Main
     {
         try
         {
+            msg = "CMSG_"+msg+DELIMITER;
             out.write(msg.getBytes());
             if (DEBUG)
                 System.out.print("SEND: "+msg);
@@ -330,13 +412,27 @@ public class Main
         }
     }
 
-    public boolean haveCard(String card)
+    public boolean haveCard(String card, int count)
     {
-        return false;
+        return cards.containsKey(card) && cards.get(card) >= count;
     }
 
-    public void printCards()
+    public void printCards(String[] parts)
     {
+        for(int i = 1; i < parts.length;)
+        {
+            if (i == 1)
+            {
+                System.out.println("Number of cards in deck: "+parts[i]);
+                i+=2;
+                continue;
+            }
+
+            System.out.println("Player " + parts[i-1] + " have " + parts[i]+" cards");
+            i+=2;
+        }
+
+        System.out.println("Your cards:");
         for (Map.Entry<String,Integer> pair : cards.entrySet())
         {
             if (pair.getValue() > 0)
@@ -346,13 +442,14 @@ public class Main
 
     public void requestLobbyList()
     {
-        send("LOBBY_LIST"+DELIMITER);
+        send("LOBBY_LIST");
     }
 
     public void createLobby(String name)
     {
         lobbyName = name;
         inLobby.set(true);
+        System.out.println("You created lobby \""+name+"\"");
     }
 
     public void leaveLobby()
@@ -360,7 +457,7 @@ public class Main
         inLobby.set(false);
         lobbyName = "";
         System.out.println("You left lobby.");
-        send("LOBBY_LIST"+DELIMITER);
+        send("LOBBY_LIST");
     }
 
     public void joinLobby(String name)
@@ -368,7 +465,6 @@ public class Main
         lobbyName = name;
         inLobby.set(true);
         System.out.println("You joined lobby \""+name+"\"");
-        send("LOBBY_LIST"+DELIMITER);
+        send("LOBBY_LIST");
     }
-
 }

@@ -1,4 +1,3 @@
-#pragma once
 #include "Lobby.h"
 #include <algorithm>
 
@@ -38,6 +37,9 @@ void Lobby::onPlayerLeft(Player* player)
     players.erase(itr);
     for (auto p : players)
         p->sendMessage("Player " + player->name + " left lobby");
+
+    if (owner == player)
+        owner = nullptr;
 }
 
 

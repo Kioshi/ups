@@ -1,8 +1,9 @@
 #include <iostream>
-#include "tcp.h"
+#include "Tcp.h"
 #include <thread>
 #include "utils.h"
-#include "server.h"
+#include "Server.h"
+#include <ctime>
 
 #define DEBUGING
 int main(int argc, char** argv)
@@ -11,6 +12,7 @@ int main(int argc, char** argv)
 #ifndef DEBUGING
     std::cout << "Zadejte port: ";
     std::cin >> port;
+    std::srand(std::time(0));
 #else
     port = 10001;
 #endif // !DEBUGING

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.h"
+#include "Message.h"
 #include <vector>
 #include <functional>
 

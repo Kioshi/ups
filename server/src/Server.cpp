@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <sstream>
+#include <string.h>
 
 #include "Tcp.h"
 #include "Message.h"
@@ -80,7 +81,7 @@ void Server::run()
                         return;
                     }
 
-                    if (tokens[0] == "LOGIN")
+                    if (tokens[0] == "CMSG_LOGIN")
                     {
                         if (checkNickName(tokens[1]))
                         {
@@ -91,7 +92,7 @@ void Server::run()
                         }
                         std::cout << "Client " << socket << " name: " << tokens[1] << " was already taken disconnecting" << std::endl;
                     }
-                    if (tokens[0] == "SESSION")
+                    if (tokens[0] == "CMSG_SESSION")
                     {
                         if (Player* player = getPlayerBySession(tokens[1]))
                         {
@@ -125,6 +126,7 @@ void Server::run()
         updateDisconnected(DIFF);
         updatePlayers();
         updateGames();
+        updateLobbies();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(DIFF));
     }
@@ -216,6 +218,11 @@ void Server::createLobby(PlayerMessage* pm)
         pm->player->sendMessage("You are already in lobby!");
         return;
     }
+    if (pm->message->data.empty())
+    {
+        pm->player->sendMessage("Name of lobby cant be empty!");
+        return;
+    }
     Guard guard(lobbyLock);
     auto itr = std::find(lobbies.begin(), lobbies.end(), pm->message->data);
     
@@ -236,6 +243,11 @@ void Server::joinLobby(PlayerMessage* pm)
     if (pm->player->getLobby())
     {
         pm->player->sendMessage("You are already in lobby!");
+        return;
+    }
+    if (pm->message->data.empty())
+    {
+        pm->player->sendMessage("Name of lobby cant be empty!");
         return;
     }
     Guard guard(lobbyLock);
@@ -310,9 +322,49 @@ void Server::kickPlayer(PlayerMessage * pm)
     }
 }
 
-void Server::startGame()
+void Server::startGame(PlayerMessage* pm)
 {
-    throw std::logic_error("The method or operation is not implemented.");
+    if (Lobby* lobby = pm->player->getLobby())
+    {
+        if (lobby->owner != pm->player)
+        {
+            pm->player->sendMessage("You are not lobby owner!");
+            return;
+        }
+        if (lobby->players.size() < 2)
+        {
+            pm->player->sendMessage("You need at least 2 players to start a game!");
+            return;
+        }
+
+        _games.push_back(new Game(lobby->players));
+        
+        Guard guard(lobbyLock);
+        lobby->players.clear();
+        auto itr = std::find(lobbies.begin(), lobbies.end(), lobby);
+        if (itr != lobbies.end())
+            lobbies.erase(itr);
+        delete lobby;
+        
+    }
+    else
+        pm->player->sendMessage("You are not in a lobby!");
+
+}
+
+void Server::updateLobbies()
+{
+    Guard guard(lobbyLock);
+    std::vector<std::vector<Lobby*>::iterator> toRemove;
+    for (auto itr = lobbies.begin(); itr != lobbies.end(); itr++)
+        if (!(*itr)->owner)
+            toRemove.push_back(itr);
+    for (auto itr : toRemove)
+    {
+        Lobby* l = *itr;
+        delete l;
+        lobbies.erase(itr);
+    }
 }
 
 void Server::updatePlayers()
@@ -321,25 +373,25 @@ void Server::updatePlayers()
     {
         switch ((Opcodes)*message->message)
         {
-        case LOBBY_LIST:
+        case CMSG_LOBBY_LIST:
             message->player->sendLobbyList();
             break;
-        case CREATE_LOBBY:
+        case CMSG_CREATE_LOBBY:
             createLobby(message);
             break;
-        case JOIN_LOBBY:
+        case CMSG_JOIN_LOBBY:
             joinLobby(message);
             break;
-        case LEAVE_LOBBY:
+        case CMSG_LEAVE_LOBBY:
             leaveLobby(message);
             break;
-        case START_GAME:
-            startGame();
+        case CMSG_START_GAME:
+            startGame(message);
             break;
-        case KICK_PLAYER:
+        case CMSG_KICK_PLAYER:
             kickPlayer(message);
             break;
-        case QUIT:
+        case CMSG_QUIT:
             break;
         default:
             //kick
