@@ -108,7 +108,7 @@ void Server::run()
         }
     });
 
-    std::thread([&]
+    std::thread inputThread([&]
     {
         std::string command;
         while (std::cin >> command)
@@ -122,7 +122,7 @@ void Server::run()
         }
         _state = EXITED;
         printf("State set to %d\n", (int)_state);
-    }).detach();
+    });
 
     while (_state == RUNNING)
     {
@@ -139,6 +139,9 @@ void Server::run()
 
     if (acceptThread.joinable())
         acceptThread.join();
+
+    if (inputThread.joinable())
+        inputThread.join();
 };
 
 void Server::updateDisconnected(uint32 diff)
