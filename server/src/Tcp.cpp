@@ -184,9 +184,9 @@ bool TCP::validateMessage(enum Opcodes opcode, std::vector<std::string>& tokens)
         case CMSG_FF:
         case CMSG_DRAW:
         case CMSG_CARDS:
+        case CMSG_QUIT:
             tokens.clear();
             return true;
-        case CMSG_QUIT:
         case UNUSED:
         default:
             return false;

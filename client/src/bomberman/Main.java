@@ -12,7 +12,7 @@ import static java.lang.System.in;
 
 public class Main
 {
-    static boolean DEBUG = false;
+    static boolean DEBUG = true;
     OutputStream out;
     static char DELIMITER = '\n';
     static char ESCAPE = '\\';
@@ -40,7 +40,8 @@ public class Main
         Scanner scanner = new Scanner(in);
         printStream = new PrintStream("network.log");
         connect(args,scanner);
-        login(scanner);
+        if (!login(scanner))
+            return;
 
         connected.set(true);
         InputThread inputThread = new InputThread(this);
@@ -82,7 +83,7 @@ public class Main
                     if (port >= 65536 || port == 0)
                     {
                         System.out.println("Wrong port");
-                        return;
+                        continue;
                     }
                     clientSocket = new Socket(host, port);
                 }
@@ -93,14 +94,14 @@ public class Main
             {
                 System.out.println("Cant connect to server!");
                 if (DEBUG)
-                    return;
+                    System.exit(0);
             }
 
         }
 
     }
 
-    void login(Scanner scanner)
+    boolean login(Scanner scanner)
     {
         System.out.print("Nickname: ");
         while(session == null)
@@ -127,20 +128,22 @@ public class Main
             catch (Exception e)
             {
                 System.err.println("Server unexpectly closed connection!");
-                return;
+                return false;
             }
 
             if (session == null)
             {
                 System.out.print("Nick is already taken, try another one: ");
                 if (!reconnect())
-                    return;
+                    return false;
             }
             else
             {
                 session = session.split(" ")[1];
             }
         }
+
+        return true;
     }
 
     void run()
