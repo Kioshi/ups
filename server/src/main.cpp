@@ -5,7 +5,7 @@
 #include "Server.h"
 #include <ctime>
 
-#define DEBUGING
+//#define DEBUGING
 int main(int argc, char** argv)
 {
     uint16 port;
