@@ -154,7 +154,9 @@ void Player::ff()
 void Player::startGame(std::string startingPlayer, Game* _game)
 {
     _lobby = nullptr;
+    dead = false;
     game = _game;
+    cards.clear();
     _toSend.push(new Message(SMSG_START_GAME, startingPlayer));
 }
 
@@ -255,4 +257,9 @@ Server* Player::getServer()
 void Player::disconnect()
 {
     _state = DISCONNECTED;
+}
+
+void Player::turn()
+{
+    _toSend.push(new Message(SMSG_TURN));
 }

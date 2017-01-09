@@ -56,17 +56,26 @@ void Game::RemovePlayer(Player* player)
 {
     Guard guard(_lock);
 
+    bool newPlayer = _players[playing] == player;
     auto itr = std::find(_players.begin(), _players.end(), player);
     if (itr != _players.end())
         _players.erase(itr);
 
     if (playing == _players.size())
+    {
         playing = 0;
+        newPlayer = true;
+    }
 
-    checkState();
-    if (_players.size() > 1)
-        announce(nullptr, "Next player is \"" + _players[playing]->name + "\".");
-
+    if (newPlayer)
+    {
+        checkState();
+        if (_players.size() > 1)
+        {
+            announce(nullptr, "Next player is \"" + _players[playing]->name + "\".");
+            _players[playing]->turn();
+        }
+    }
 }
 
 LFQueue<PlayerMessage>& Game::GetMessages()
@@ -357,6 +366,7 @@ void Game::endTurn(Player * player)
     if (found)
     {
         announce(player, "finnished his turn, next player is \"" + _players[playing]->name + "\".", false);
+        _players[playing]->turn();
         return;
     }
     for (uint8 i = 0; i < playing; i++)
@@ -366,5 +376,6 @@ void Game::endTurn(Player * player)
             break;
         }
     announce(player, "finnished his turn, next player is \"" + _players[playing]->name + "\".", false);
+    _players[playing]->turn();
 }
 

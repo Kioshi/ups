@@ -69,6 +69,7 @@ public:
     void startGame(std::string startingPlayer, class Game* game);
     void ff();
     void endGame(Player * winner);
+    void turn();
 
     Lobby* getLobby();
     Server* getServer();

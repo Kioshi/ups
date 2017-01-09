@@ -137,11 +137,20 @@ public class InputThread extends Thread
                     else
                         System.out.println("You cant kick player from game!");
                     break;
+                case "help":
+                {
+                    if (game.inGame.get())
+                        game.canPlay();
+                    else
+                        System.out.println("Help command will tell you what you can play. Use controlls for list of all commands.");
+                    break;
+                }
                 default:
                     System.out.println("Unknown command! Use command 'controls' for list of available commands.");
                     break;
             }
         }
+        System.exit(0);
     }
 
     private boolean checkConnected(String part)

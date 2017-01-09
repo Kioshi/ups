@@ -57,6 +57,7 @@ std::string Message::toString()
         case SMSG_DISCARD: op = "SMSG_DISCARD"; break;
         case SMSG_MESSAGE: op = "SMSG_MESSAGE"; break;
         case SMSG_GAME_END: op = "SMSG_GAME_END"; break;
+        case SMSG_TURN: op = "SMSG_TURN"; break;
         default:
             assert(!(opcode < UNUSED));
             break;

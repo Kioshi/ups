@@ -1,9 +1,6 @@
 package bomberman;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +12,7 @@ import static java.lang.System.in;
 
 public class Main
 {
-    static boolean DEBUG = false;
+    static boolean DEBUG = true;
     OutputStream out;
     static char DELIMITER = '\n';
     static char ESCAPE = '\\';
@@ -31,16 +28,28 @@ public class Main
     Socket clientSocket = null;
     BufferedReader br = null;
     String nick;
+    PrintStream printStream;
 
     public static void main(String[] args) throws IOException
     {
         new Main(args);
     }
 
-    Main(String[] args)
+    Main(String[] args) throws FileNotFoundException
     {
         Scanner scanner = new Scanner(in);
+        printStream = new PrintStream("network.log");
+        connect(args,scanner);
+        login(scanner);
 
+        connected.set(true);
+        InputThread inputThread = new InputThread(this);
+        inputThread.start();
+        run();
+    }
+
+    void connect(String args[],Scanner scanner)
+    {
         while(clientSocket == null)
         {
             try
@@ -89,6 +98,10 @@ public class Main
 
         }
 
+    }
+
+    void login(Scanner scanner)
+    {
         System.out.print("Nickname: ");
         while(session == null)
         {
@@ -107,6 +120,9 @@ public class Main
                 send(s);
                 System.out.println("Logging...");
                 session = br.readLine();
+                if (DEBUG)
+                    System.out.println("RECV: "+session);
+                printStream.println("RECV: "+session);
             }
             catch (Exception e)
             {
@@ -125,11 +141,10 @@ public class Main
                 session = session.split(" ")[1];
             }
         }
+    }
 
-        connected.set(true);
-        InputThread inputThread = new InputThread(this);
-        inputThread.start();
-
+    void run()
+    {
         String msg = "";
         while (running.get())
         {
@@ -156,6 +171,7 @@ public class Main
 
             if (DEBUG)
                 System.out.println("RECV: "+msg);
+            printStream.println("RECV: "+msg);
 
             if (!parseMessage(msg))
             {
@@ -163,7 +179,6 @@ public class Main
                 break;
             }
         }
-        System.out.println("Press enter to exit");
     }
 
     private boolean reconnect()
@@ -267,6 +282,10 @@ public class Main
             case "SMSG_PLAY":
                 play(parts);
                 break;
+            case "SMSG_TURN":
+                System.out.println("Its your turn, this is what you can do:");
+                canPlay();
+                break;
         }
 
         return true;
@@ -347,6 +366,7 @@ public class Main
         System.out.println("The Game has started. Starting player is "+name);
         inLobby.set(false);
         inGame.set(true);
+        cards.clear();
     }
 
     String[] split(String text)
@@ -418,6 +438,7 @@ public class Main
             out.write(msg.getBytes());
             if (DEBUG)
                 System.out.print("SEND: "+msg);
+            printStream.print("SEND: "+msg);
         } catch (IOException e)
         {
             // No need to do anything endless recv cycle in main will handle reconnect
@@ -478,5 +499,29 @@ public class Main
         inLobby.set(true);
         System.out.println("You joined lobby \""+name+"\"");
         send("LOBBY_LIST");
+    }
+    
+    void canPlay()
+    {
+        for(Map.Entry<String, Integer> entry : cards.entrySet())
+        {
+            switch (entry.getKey().toLowerCase())
+            {
+
+                case "kick":
+                case "run":
+                case "peak":
+                case "shuffle":
+                case "steal":
+                    if (entry.getValue() >= 1)
+                        System.out.println("You can play "+ entry.getKey());
+                    break;
+                default:
+                    if (entry.getValue() >= 3)
+                        System.out.println("You can play triples with "+ entry.getKey());
+                    break;
+            }
+        }
+        System.out.println("You can end turn by drawing a card.");
     }
 }

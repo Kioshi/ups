@@ -33,6 +33,7 @@ enum Opcodes
     SMSG_DISCARD,
     SMSG_MESSAGE,
     SMSG_GAME_END,
+    SMSG_TURN,
 
     UNUSED, //placehoder
 };
