@@ -25,129 +25,134 @@ public class InputThread extends Thread
         {
             String line = scanner.nextLine();
 
-            if (!game.running.get())
-                break;
-
-            String[] parts = line.split(" ");
-            if (parts.length < 1)
-                continue;
-
-            if (!checkConnected(parts[0]))
+            try
             {
-                System.out.println("Please wait attempting to reconnect...");
-                continue;
-            }
-
-            switch (parts[0].toLowerCase())
-            {
-                case "debug":
-                    game.DEBUG = !game.DEBUG;
+                if (!game.running.get())
                     break;
-                case "lobby":
+
+                String[] parts = line.split(" ");
+                if (parts.length < 1)
+                    continue;
+
+                if (!checkConnected(parts[0]))
                 {
-                    game.requestLobbyList();
-                    break;
+                    System.out.println("Please wait attempting to reconnect...");
+                    continue;
                 }
-                case "create":
+
+                switch (parts[0].toLowerCase())
                 {
-                    String name = "";
-                    for (int i = 1; i < parts.length; i++)
-                        name += (i == 1 ? "" : " ") + parts[i];
-                    if (name.trim().isEmpty())
+                    case "debug":
+                        game.DEBUG = !game.DEBUG;
+                        break;
+                    case "lobby":
                     {
-                        System.out.println("Lobby need a name!");
+                        game.requestLobbyList();
                         break;
                     }
-                    game.send("CREATE_LOBBY " + game.escapeString(name) );
-                    break;
-                }
-                case "leave":
-                {
-                    game.send("LEAVE_LOBBY" );
-                    break;
-                }
-                case "join":
-                {
-                    String name = "";
-                    for (int i = 1; i < parts.length; i++)
-                        name += (i == 1 ? "" : " ") + parts[i];
-                    if (name.trim().isEmpty())
+                    case "create":
                     {
-                        System.out.println("Lobby need a name!");
+                        String name = "";
+                        for (int i = 1; i < parts.length; i++)
+                            name += (i == 1 ? "" : " ") + parts[i];
+                        if (name.trim().isEmpty())
+                        {
+                            System.out.println("Lobby need a name!");
+                            break;
+                        }
+                        game.send("CREATE_LOBBY " + game.escapeString(name));
                         break;
                     }
-                    game.send("JOIN_LOBBY " + game.escapeString(name) );
-                    break;
-                }
-                case "cards":
-                {
-                    if (game.inGame.get())
-                        game.send("CARDS");
-                    else
-                        System.out.println("You are not in a game.");
-                    break;
-                }
-                case "play":
-                {
-                    if (game.inGame.get())
-                        handlePlay(parts);
-                    else
-                        System.out.println("You are not in a game.");
-                    break;
-                }
-                case "draw":
-                {
-                    if (game.inGame.get())
-                        game.send("DRAW");
-                    else
-                        System.out.println("You are not in a game.");
-                    break;
-                }
-                case "start":
-                {
-                    game.send("START_GAME");
-                    break;
-                }
-                case "rules":
-                    printRules();
-                    break;
-                case "controls":
-                    printControls();
-                    break;
-                case "ff":
-                    if (game.inGame.get())
+                    case "leave":
                     {
-                        game.send("FF" );
+                        game.send("LEAVE_LOBBY");
+                        break;
                     }
-                    else
-                        System.out.println("You are not in a game.");
-                    break;
-                case "quit":
-                    game.send("QUIT");
-                    game.running.set(false);
-                    break cycle;
-                case "kick":
-                    if (game.inGame.get())
+                    case "join":
                     {
-                        if (parts.length <= 1)
-                            game.send("KICK_PLAYER " + game.escapeString(parts[1]));
+                        String name = "";
+                        for (int i = 1; i < parts.length; i++)
+                            name += (i == 1 ? "" : " ") + parts[i];
+                        if (name.trim().isEmpty())
+                        {
+                            System.out.println("Lobby need a name!");
+                            break;
+                        }
+                        game.send("JOIN_LOBBY " + game.escapeString(name));
+                        break;
+                    }
+                    case "cards":
+                    {
+                        if (game.inGame.get())
+                            game.send("CARDS");
                         else
-                            System.out.println("I dont know maybe it would be good to specifie name of player you wanna kick!");
+                            System.out.println("You are not in a game.");
+                        break;
                     }
-                    else
-                        System.out.println("You cant kick player from game!");
-                    break;
-                case "help":
-                {
-                    if (game.inGame.get())
-                        game.canPlay();
-                    else
-                        System.out.println("Help command will tell you what you can play. Use controlls for list of all commands.");
-                    break;
+                    case "play":
+                    {
+                        if (game.inGame.get())
+                            handlePlay(parts);
+                        else
+                            System.out.println("You are not in a game.");
+                        break;
+                    }
+                    case "draw":
+                    {
+                        if (game.inGame.get())
+                            game.send("DRAW");
+                        else
+                            System.out.println("You are not in a game.");
+                        break;
+                    }
+                    case "start":
+                    {
+                        game.send("START_GAME");
+                        break;
+                    }
+                    case "rules":
+                        printRules();
+                        break;
+                    case "controls":
+                        printControls();
+                        break;
+                    case "ff":
+                        if (game.inGame.get())
+                        {
+                            game.send("FF");
+                        } else
+                            System.out.println("You are not in a game.");
+                        break;
+                    case "quit":
+                        game.send("QUIT");
+                        game.running.set(false);
+                        break cycle;
+                    case "kick":
+                        if (game.inGame.get())
+                        {
+                            if (parts.length <= 1)
+                                game.send("KICK_PLAYER " + game.escapeString(parts[1]));
+                            else
+                                System.out.println("I dont know maybe it would be good to specifie name of player you wanna kick!");
+                        } else
+                            System.out.println("You cant kick player from game!");
+                        break;
+                    case "help":
+                    {
+                        if (game.inGame.get())
+                            game.canPlay();
+                        else
+                            System.out.println("Help command will tell you what you can play. Use controlls for list of all commands.");
+                        break;
+                    }
+                    default:
+                        System.out.println("Unknown command! Use command 'controls' for list of available commands.");
+                        break;
                 }
-                default:
-                    System.out.println("Unknown command! Use command 'controls' for list of available commands.");
-                    break;
+            }
+            catch (Exception e)
+            {
+                System.out.println("Wrong syntax! Use command 'controls' for list of available commands and their usage.");
             }
         }
         System.exit(0);

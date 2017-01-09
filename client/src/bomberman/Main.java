@@ -12,7 +12,7 @@ import static java.lang.System.in;
 
 public class Main
 {
-    static boolean DEBUG = true;
+    static boolean DEBUG = false;
     OutputStream out;
     static char DELIMITER = '\n';
     static char ESCAPE = '\\';
@@ -518,7 +518,7 @@ public class Main
                     break;
                 default:
                     if (entry.getValue() >= 3)
-                        System.out.println("You can play triples with "+ entry.getKey());
+                        System.out.println("You can play triple with "+ entry.getKey());
                     break;
             }
         }

@@ -25,7 +25,14 @@ typedef int socklen_t;
 
 #include <iostream>
 
-uint32 TCP::_connections;
+std::atomic<uint32> TCP::_connections;
+std::atomic<uint64> TCP::sendBytes;
+std::atomic<uint64> TCP::recvBytes;
+std::atomic<uint64> TCP::sendMessages;
+std::atomic<uint64> TCP::recvMessages;
+std::atomic<uint64> TCP::accepted;
+std::atomic<uint64> TCP::closed;
+std::atomic<uint64> TCP::interrupted;
 
 TCP::TCP(int sock)
 {
@@ -44,7 +51,7 @@ TCP::TCP(int sock)
 
 TCP::~TCP()
 {
-
+    closed++;
 #ifdef WIN32
     closesocket(_socket);
     if (--_connections == 0)
@@ -89,21 +96,31 @@ void TCP::accept(std::function<void(int)> lambda)
     socklen_t addrLen = sizeof(sockaddr_in);
     int clientSocket = (int)::accept(_socket, (struct sockaddr *)&addr, &addrLen);
     if (clientSocket > 0)
+    {
+        accepted++;
         lambda(clientSocket);
+    }
 }
 
 int TCP::recv(char * buffer, int lenght)
 {
-    return ::recv(_socket, buffer, lenght, 0);
+    int ret = ::recv(_socket, buffer, lenght, 0);
+    if (ret <= -1)
+        interrupted++;
+    else
+        recvBytes += ret;
+    return ret;
 }
 
 void TCP::send(const char * buffer, int lenght)
 {
+    sendBytes += lenght;
     ::send(_socket, buffer, lenght, 0);
 }
 
 void TCP::send(Message* message)
 {
+    sendMessages++;
     std::string msg = message->toString();
     send(msg.c_str(), (int)msg.size());
 }
@@ -144,6 +161,7 @@ void TCP::parseMessages(std::vector<Message*>& messages, std::vector<std::string
         {
             std::stringstream data;
             messages.push_back(new Message(opcode, tokens));
+            recvMessages++;
         }
     }
 }
@@ -215,9 +233,12 @@ bool TCP::select(std::vector<Message*>& messages, std::string& incompleteMessage
     tv.tv_sec = 0;
     tv.tv_usec = 10 * IN_MICROSECONDS;
 
-    int ret = ::select(_socket+1, &readfds, NULL, NULL, &tv);
+    int ret = ::select(_socket + 1, &readfds, NULL, NULL, &tv);
     if (ret == -1)
+    {
+        interrupted++;
         return false;
+    }
     else if (ret == 0)
         return true; // timeout
 
@@ -238,4 +259,12 @@ void TCP::DieWithError(char *errorMessage)
     perror(errorMessage);
 #endif
     assert(false);
+}
+
+void TCP::printStats()
+{
+    printf("TCP stats:\n");
+    printf("Connections - accepted: %d closed: %d interrupted: %d", accepted, closed, interrupted);
+    printf("Bytes - recv: %d send: %d", recvBytes, sendBytes);
+    printf("Messages - recv: %d send: %d", recvMessages, sendMessages);
 }

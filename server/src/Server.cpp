@@ -32,7 +32,7 @@ void Server::run()
             {
                 std::thread([&, socket]
                 {
-                    std::cout << "New client " << socket << std::endl;
+                    printf("%d - New connection\n", socket);
                     TCP* client = new TCP(socket);
 
                     std::string message;
@@ -85,22 +85,22 @@ void Server::run()
                     {
                         if (checkNickName(tokens[1]))
                         {
-                            std::cout << "Client " << socket << " name: " << tokens[1] << std::endl;
+                            printf("%d - New player name: %s\n", socket, tokens[1].c_str());
                             Player* player = new Player(client, tokens[1], secondMsg, _messages, this);
                             addNewPlayer(player);
                             return;
                         }
-                        std::cout << "Client " << socket << " name: " << tokens[1] << " was already taken disconnecting" << std::endl;
+                        printf("%d - Nick %s already taken disconnecting\n", socket, tokens[1].c_str());
                     }
                     if (tokens[0] == "CMSG_SESSION")
                     {
                         if (Player* player = getPlayerBySession(tokens[1]))
                         {
-                            std::cout << "Client " << socket << " session: " << tokens[1] << " reconnected" << std::endl;
+                            printf("%d - Reconnected from session: %s\n", socket, tokens[1].c_str());
                             player->Reconnect(client, secondMsg);
                             return;
                         }
-                        std::cout << "Client " << socket << " session: " << tokens[1] << " not found disconnecting" << std::endl;
+                        printf("%d - Session %s not found disconnecting\n", socket, tokens[1].c_str());
                     }
                     delete client;
                 }).detach();
@@ -108,18 +108,19 @@ void Server::run()
         }
     });
 
-    std::thread inputTHread([&]
+    std::thread([&]
     {
         std::string command;
         while (std::cin >> command)
         {
+            std::cout << command << std::endl;
             if (command == "exit")
             {
                 break;
             }
         }
         _state = EXITED;
-    });
+    }).detach();
 
     while (_state == RUNNING)
     {
@@ -133,8 +134,6 @@ void Server::run()
 
     delete _server;
 
-    if (inputTHread.joinable())
-        inputTHread.join();
     if (acceptThread.joinable())
         acceptThread.join();
 };

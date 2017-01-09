@@ -4,6 +4,7 @@
 #include "Message.h"
 #include <vector>
 #include <functional>
+#include <atomic>
 
 class Message;
 
@@ -34,9 +35,19 @@ public:
 
     static void parseMessages(std::vector<Message*>& messages, std::vector<std::string>& msgs);
     static bool validateMessage(enum Opcodes opcode, std::vector<std::string>& tokens);
+
+    static void printStats();
     
 private:
     void DieWithError(char *errorMessage);
     int _socket;
-    static uint32 _connections;
+    static std::atomic<uint32> _connections;
+    // stats
+    static std::atomic<uint64> sendBytes;
+    static std::atomic<uint64> recvBytes;
+    static std::atomic<uint64> sendMessages;
+    static std::atomic<uint64> recvMessages;
+    static std::atomic<uint64> accepted;
+    static std::atomic<uint64> closed;
+    static std::atomic<uint64> interrupted;
 };

@@ -45,6 +45,7 @@ Game::~Game()
         p->endGame(winner);
     _running = false;
     _acceptThread->join();
+    delete _acceptThread;
 }
 
 bool Game::isRunning()
