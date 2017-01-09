@@ -264,7 +264,7 @@ void TCP::DieWithError(char *errorMessage)
 void TCP::printStats()
 {
     printf("TCP stats:\n");
-    printf("Connections - accepted: %lld closed: %lld interrupted: %lld", (uint64)accepted, (uint64)closed, (uint64)interrupted);
-    printf("Bytes - recv: %lld send: %lld", (uint64)recvBytes, (uint64)sendBytes);
-    printf("Messages - recv: %lld send: %lld", (uint64)recvMessages, (uint64)sendMessages);
+    printf("Connections - accepted: %lld closed: %lld interrupted: %lld\n", (uint64)accepted, (uint64)closed, (uint64)interrupted);
+    printf("Bytes - recv: %lld send: %lld\n", (uint64)recvBytes, (uint64)sendBytes);
+    printf("Messages - recv: %lld send: %lld\n", (uint64)recvMessages, (uint64)sendMessages);
 }

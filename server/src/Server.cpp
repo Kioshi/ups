@@ -113,13 +113,15 @@ void Server::run()
         std::string command;
         while (std::cin >> command)
         {
-            std::cout << command << std::endl;
             if (command == "exit")
             {
                 break;
             }
+            if (command == "stats")
+                TCP::printStats();
         }
         _state = EXITED;
+        printf("State set to %d\n", (int)_state);
     }).detach();
 
     while (_state == RUNNING)
@@ -131,6 +133,7 @@ void Server::run()
 
         std::this_thread::sleep_for(std::chrono::milliseconds(DIFF));
     }
+    printf("Exiting...\n");
 
     delete _server;
 
