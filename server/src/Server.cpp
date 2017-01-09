@@ -85,6 +85,7 @@ void Server::run()
                     {
                         if (checkNickName(tokens[1]))
                         {
+                            TCP::recvMessages++;
                             printf("%d - New player name: %s\n", socket, tokens[1].c_str());
                             Player* player = new Player(client, tokens[1], secondMsg, _messages, this);
                             addNewPlayer(player);
@@ -94,6 +95,7 @@ void Server::run()
                     }
                     if (tokens[0] == "CMSG_SESSION")
                     {
+                        TCP::recvMessages++;
                         if (Player* player = getPlayerBySession(tokens[1]))
                         {
                             printf("%d - Reconnected from session: %s\n", socket, tokens[1].c_str());

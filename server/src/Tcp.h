@@ -46,8 +46,9 @@ private:
     static std::atomic<uint64> sendBytes;
     static std::atomic<uint64> recvBytes;
     static std::atomic<uint64> sendMessages;
-    static std::atomic<uint64> recvMessages;
     static std::atomic<uint64> accepted;
     static std::atomic<uint64> closed;
     static std::atomic<uint64> interrupted;
+public:
+    static std::atomic<uint64> recvMessages;
 };
