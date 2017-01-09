@@ -397,6 +397,7 @@ void Server::updatePlayers()
             kickPlayer(message);
             break;
         case CMSG_QUIT:
+            removePlayer(message->player);
             break;
         default:
             //kick

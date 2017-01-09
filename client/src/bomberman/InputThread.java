@@ -155,7 +155,6 @@ public class InputThread extends Thread
                 System.out.println("Wrong syntax! Use command 'controls' for list of available commands and their usage.");
             }
         }
-        System.exit(0);
     }
 
     private boolean checkConnected(String part)
