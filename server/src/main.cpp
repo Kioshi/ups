@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     {
         std::cout << "Zadejte port: ";
         std::cin >> port;
-    } while (port > 0 && port < 65536);
+    } while (port <= 0 && port >= 65536);
     std::srand((unsigned int)std::time(0));
 #else
     port = 10001;
