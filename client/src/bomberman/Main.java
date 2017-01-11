@@ -12,7 +12,7 @@ import static java.lang.System.in;
 
 public class Main
 {
-    static boolean DEBUG = true;
+    static boolean DEBUG = false;
     OutputStream out;
     static char DELIMITER = '\n';
     static char ESCAPE = '\\';
