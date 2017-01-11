@@ -121,9 +121,14 @@ void Server::run()
             }
             if (command == "stats")
                 TCP::printStats();
+            else
+            {
+                printf("Available commands:\n");
+                printf(" stats - network statistics\n");
+                printf(" exit - shutdown server\n");
+            }
         }
         _state = EXITED;
-        printf("State set to %d\n", (int)_state);
     });
 
     while (_state == RUNNING)
