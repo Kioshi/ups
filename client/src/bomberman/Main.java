@@ -139,7 +139,21 @@ public class Main
             }
             else
             {
-                session = session.split(" ")[1];
+                String[] str = session.split(" ");
+                if (str.length < 2 || !str[0].equals("SMSG_SESSION") || !nick.equals(new StringBuilder(str[1]).reverse().toString()))
+                {
+                    System.err.println("Server speaking gibberish!");
+                    System.exit(0);
+                }
+                else
+                {
+                    session = "";
+                    for (int i = 1; i < str.length; i++)
+                    {
+                        if (i!=1) session += " ";
+                        session += str[i];
+                    }
+                }
             }
         }
 
