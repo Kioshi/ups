@@ -380,3 +380,7 @@ void Game::endTurn(Player * player)
     _players[playing]->turn();
 }
 
+void Game::reconnected(Player* player)
+{
+    player->startGame(_players[playing]->name, this, true);
+}

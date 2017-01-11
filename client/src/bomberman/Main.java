@@ -12,7 +12,7 @@ import static java.lang.System.in;
 
 public class Main
 {
-    static boolean DEBUG = false;
+    static boolean DEBUG = true;
     OutputStream out;
     static char DELIMITER = '\n';
     static char ESCAPE = '\\';
@@ -110,7 +110,7 @@ public class Main
             nick = scanner.nextLine().trim();
             if (nick.charAt(0) == '_' && nick.length() > 1)
             {
-                s = "SESSION " + escapeString(nick.substring(1));
+                s = "SESSION " + escapeString(new StringBuilder(nick.substring(1)).reverse().toString());
             }
             else
                 s = "LOGIN " + escapeString(nick);
@@ -370,6 +370,7 @@ public class Main
         inLobby.set(false);
         inGame.set(true);
         cards.clear();
+        canPlay();
     }
 
     String[] split(String text)

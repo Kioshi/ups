@@ -66,7 +66,7 @@ public:
     void play(std::string card);
     uint8 countCards();
     void send(enum Opcodes opcode, std::string msg);
-    void startGame(std::string startingPlayer, class Game* game);
+    void startGame(std::string startingPlayer, class Game* game, bool reconnect = false);
     void ff();
     void endGame(Player * winner);
     void turn();

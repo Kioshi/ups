@@ -40,6 +40,7 @@ public:
 
     LFQueue<PlayerMessage>& GetMessages();
     static std::string encodeCard(Card c);
+    void reconnected(Player* player);
 private:
 
     void run();

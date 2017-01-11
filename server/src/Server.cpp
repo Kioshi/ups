@@ -433,10 +433,10 @@ Player* Server::getPlayerBySession(std::string session)
     if (session.empty())
         return nullptr;
 
-    Guard lock(_playersLock);
-    for (auto player : _loggedPlayers)
-        if (player->session == session)
-            return player;
+    Guard lock(_disconnectedLock);
+    for (auto pair : _disconnectedPlayers)
+        if (pair.first->session == session)
+            return pair.first;
 
     return nullptr;
 }

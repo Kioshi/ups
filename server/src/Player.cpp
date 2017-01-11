@@ -96,6 +96,8 @@ void Player::Reconnect(TCP* socket, std::string incompleteMessage)
     _server->removeFromDisconected(this);
     _state = READY;
     _socket->send(new Message(SMSG_SESSION, session));
+    if (game)
+        game->reconnected(this);
     createNetworkThread();
 }
 
@@ -136,6 +138,11 @@ void Player::createNetworkThread()
             _server->addToDisconected(this);
         if (_lobby)
             leaveLobby(_lobby);
+        if (dead && game)
+        {
+            game->RemovePlayer(this);
+            game = nullptr;
+        }
     });
 }
 
@@ -151,13 +158,20 @@ void Player::ff()
     _toSend.push(new Message(SMSG_FF));
 }
 
-void Player::startGame(std::string startingPlayer, Game* _game)
+void Player::startGame(std::string startingPlayer, Game* _game, bool reconnect)
 {
     _lobby = nullptr;
     dead = false;
     game = _game;
-    cards.clear();
     _toSend.push(new Message(SMSG_START_GAME, startingPlayer));
+    if (!reconnect)
+        cards.clear();
+    else
+    {
+        for (auto pair : cards)
+            for (uint8 i = 0; i < pair.second; i++)
+                _toSend.push(new Message(SMSG_DRAW, Game::encodeCard(pair.first)));
+    }
 }
 
 void Player::send(Opcodes opcode, std::string msg)

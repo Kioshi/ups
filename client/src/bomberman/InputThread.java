@@ -141,8 +141,19 @@ public class InputThread extends Thread
                     {
                         if (game.inGame.get())
                             game.canPlay();
+                        else if (game.inLobby.get())
+                        {
+                            System.out.println("You can use command leave");
+                            System.out.println("You can use command kick <player> if you are leader");
+                            System.out.println("You can use command start if you are leader");
+                        }
                         else
-                            System.out.println("Help command will tell you what you can play. Use controlls for list of all commands.");
+                        {
+                            System.out.println("You can use command join <name of lobby>");
+                            System.out.println("You can use command create <name of lobby>");
+                        }
+                        System.out.println("You can use command help for list of context commands");
+                        System.out.println("You can use command quit to exit program");
                         break;
                     }
                     default:
@@ -271,6 +282,7 @@ public class InputThread extends Thread
         System.out.println("General commands:");
         System.out.println("rules - Print rules");
         System.out.println("controls - Print controls");
+        System.out.println("help - List of context commands");
         System.out.println("quit - Exit from progam");
     }
 
