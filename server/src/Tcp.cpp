@@ -203,7 +203,7 @@ bool TCP::recieve(std::vector<Message*>& messages, std::string& incompleteMessag
     do 
     {
         bytes_read = recv(buf, sizeof(buf));
-        if (bytes_read < 0)
+        if (bytes_read <= 0)
             return false;
         message += buf;
         memset(buf, 0, sizeof(buf));

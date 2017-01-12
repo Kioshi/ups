@@ -111,6 +111,7 @@ public class Main
             if (nick.charAt(0) == '_' && nick.length() > 1)
             {
                 s = "SESSION " + escapeString(new StringBuilder(nick.substring(1)).reverse().toString());
+                nick = nick.substring(1);
             }
             else
                 s = "LOGIN " + escapeString(nick);
